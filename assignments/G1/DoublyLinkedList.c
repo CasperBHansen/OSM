@@ -8,10 +8,7 @@
 
 #include <stdlib.h> // used for NULL definition
 
-void insert(dlist * this, item * thing, bool atTail) {
-	// node * loc = atTail ? this->tail : this->head;
-	// needs implementation
-
+void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
     node *new = malloc(sizeof(node));
     new->thing = thing;
@@ -52,17 +49,16 @@ void insert(dlist * this, item * thing, bool atTail) {
 }
 
 item * extract(dlist * this, bool atTail) {
-	// node * loc = atTail ? this->tail : this->head;
-	// needs implementation
-	return NULL;
+    // node * loc = atTail ? this->tail : this->head;
+    // needs implementation
+    return NULL;
 }
 
 void reverse(dlist * this) {
-	// needs implementation
+    // needs implementation
 }
 
 item * search(dlist * this, bool (* matches(item *))) {
-	// needs implementation
-	return NULL;
+    // needs implementation
+    return NULL;
 }
-

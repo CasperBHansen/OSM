@@ -10,15 +10,20 @@
 #include "DoublyLinkedList.h"
 
 int main(int argc, char * argv[]) {
-	
-	printf("Hello, doubly-linked list!");
-	
-	dlist list;
-	insert(&list, (item *)2, 0);
-	insert(&list, (item *)4, 0);
-	insert(&list, (item *)8, 0);
-	insert(&list, (item *)16, 0);
-	
-	return EXIT_SUCCESS;
-}
 
+    int things[] =  { 2, 4, 8, 16 };
+    
+    printf("Hello, doubly-linked list!\n");
+
+    dlist *list = malloc(sizeof(dlist));
+
+    insert(list, &things[0], 0);
+    insert(list, &things[1], 0);
+    insert(list, &things[2], 0);
+    insert(list, &things[3], 0);
+
+    printf("list->head->thing: %d\n", *((int *) list->head->thing));
+    printf("list->tail->thing: %d\n", *((int *) list->tail->thing));
+
+    return EXIT_SUCCESS;
+}
