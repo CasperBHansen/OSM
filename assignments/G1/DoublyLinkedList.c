@@ -17,28 +17,24 @@ void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
     node *new = malloc(sizeof(node));
     new->thing = thing;
-
-    if (!this->head) {                        // list is empty
-        new->ptr = NULL;           // ptr XOR ptr = 0
+	
+	// empty list
+    if (!this->head) {
+        new->ptr = NULL;
         this->head = this->tail = new;
-
-    } else if (this->head == this->tail) {      // singleton list
-        this->head->ptr = this->tail->ptr = NULL;    // tail XOR tail = 0
-        this->head = new;       // make head pointer point to new node
-
-    } else {                                    // 2 or more elements
-        // XOR'ed pointer for new node, i.e. this->head XOR this->tail
-        node *new_ptr = (node *) XOR_PTR(this->head, this->tail);
-        new->ptr = new_ptr; // set ptr field in new node
-
-        // update pointers in head and tail nodes
-        ptr_addr_t new_addr = (ptr_addr_t) new;
-        this->head->ptr = (node *) (new_addr ^ XOR_PTR(this->head->ptr, this->tail));
-        this->tail->ptr = (node *) (new_addr ^ XOR_PTR(this->tail->ptr, this->head));
-
-        // make dlist head point to new node
-        this->head = new;
     }
+	// if we're appending to the tail of the list
+	else if (atTail) {
+		new->ptr = (node *) XOR_PTR(this->tail, NULL);
+		this->tail->ptr = (node *) XOR_PTR(new, XOR_PTR(this->tail->ptr, NULL));
+		this->tail = new;
+	}
+	// if we're appending to the head of the list
+	else {
+		new->ptr = (node *) XOR_PTR(this->head, NULL);
+		this->head->ptr = (node *) XOR_PTR(new, XOR_PTR(this->head->ptr, NULL));
+		this->head = new;
+	}
 }
 
 item * extract(dlist * this, bool atTail) {
@@ -48,26 +44,25 @@ item * extract(dlist * this, bool atTail) {
 }
 
 void reverse(dlist * this) {
-    // needs implementation
+    node * tmp = this->head;
+	this->head = this->tail;
+	this->tail = this->head;
 }
 
 item * search(dlist * this, bool (* matches(item *))) {
 
-/* trying to print, for debugging. Atm figuring out why ptr's are wrong ..
-	node * item = this->head;
+	node * it = this->head;
 	node * prev = NULL, * next = NULL;
 	
-	int i = 0;
-	while (item != NULL) {
+	while (it != NULL) {
 		
-		printf("list[%i] := %lu: %d\n", i++, (ptr_addr_t)item, * (int *)(item->thing));
+		if (matches(it->thing))
+			return it->thing;
 		
-		next = (node *) XOR_PTR(prev, item->ptr);
-		printf("%lu\n", (ptr_addr_t)next);
-		
-		//prev = item;
-		item = NULL;
+		next = (node *) XOR_PTR(prev, it->ptr);
+		prev = it;
+		it = next;
 	}
-	*/
+	
     return NULL;
 }

@@ -9,14 +9,13 @@
 
 #include "DoublyLinkedList.h"
 
-#define NUM_ITEMS 2
+#define NUM_ITEMS 4
 
-int things[NUM_ITEMS] = { 1, 2 };
+int things[NUM_ITEMS] = { 1, 2, 4, 8 };
 
-// not used at this time
-bool * match_int(void * arg)
+bool * match_int(item * arg)
 {
-	return NULL;
+	return (* (int *)arg == 4) ? arg : NULL;
 }
 
 int main(int argc, char * argv[]) {
@@ -26,10 +25,11 @@ int main(int argc, char * argv[]) {
 	int i = 0;
 	while (i < NUM_ITEMS) insert(list, &things[i++], 0);
 	
-	printf("head [addr: %lu ptr: %lu] %d\n", (long unsigned)list->head, (long unsigned)list->head->ptr, * (int *)list->head->thing);
-    printf("tail [addr: %lu ptr: %lu] %d\n", (long unsigned)list->tail, (long unsigned)list->tail->ptr, * (int *)list->tail->thing);
-	
+	item * match = search(list, &match_int);
+	reverse(list);
 	search(list, &match_int);
+	if (match)
+		printf("Item %d found\n", * (int *)match);
 	
 	return EXIT_SUCCESS;
 }
