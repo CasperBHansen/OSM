@@ -11,8 +11,8 @@ typedef int bool;
 typedef void item; // we store pointers
 
 typedef struct node {
-    item *thing;
-    struct node *ptr;
+    item * thing;
+    struct node * ptr;
 } node;
 
 typedef struct dlist {

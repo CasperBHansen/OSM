@@ -9,21 +9,27 @@
 
 #include "DoublyLinkedList.h"
 
+#define NUM_ITEMS 2
+
+int things[NUM_ITEMS] = { 1, 2 };
+
+// not used at this time
+bool * match_int(void * arg)
+{
+	return NULL;
+}
+
 int main(int argc, char * argv[]) {
 
-    int things[] =  { 2, 4, 8, 16 };
-    
-    printf("Hello, doubly-linked list!\n");
-
     dlist *list = malloc(sizeof(dlist));
-
-    insert(list, &things[0], 0);
-    insert(list, &things[1], 0);
-    insert(list, &things[2], 0);
-    insert(list, &things[3], 0);
-
-    printf("list->head->thing: %d\n", *((int *) list->head->thing));
-    printf("list->tail->thing: %d\n", *((int *) list->tail->thing));
-
-    return EXIT_SUCCESS;
+	
+	int i = 0;
+	while (i < NUM_ITEMS) insert(list, &things[i++], 0);
+	
+	printf("head [addr: %lu ptr: %lu] %d\n", (long unsigned)list->head, (long unsigned)list->head->ptr, * (int *)list->head->thing);
+    printf("tail [addr: %lu ptr: %lu] %d\n", (long unsigned)list->tail, (long unsigned)list->tail->ptr, * (int *)list->tail->thing);
+	
+	search(list, &match_int);
+	
+	return EXIT_SUCCESS;
 }
