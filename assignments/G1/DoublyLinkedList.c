@@ -6,8 +6,7 @@
 
 #include "DoublyLinkedList.h"
 
-#include <stdlib.h> // used for NULL definition
-#include <stdio.h> // used for NULL definition
+#include <stdlib.h>
 
 typedef unsigned long ptr_addr_t;
 
@@ -38,23 +37,26 @@ void insert(dlist *this, item *thing, bool atTail) {
 }
 
 item * extract(dlist * this, bool atTail) {
-    // node * loc = atTail ? this->tail : this->head;
-    // needs implementation
-    return NULL;
+    node * ret = atTail ? this->tail->thing : this->head->thing;
+	// missing implementation
+    return ret;
 }
 
 void reverse(dlist * this) {
     node * tmp = this->head;
 	this->head = this->tail;
-	this->tail = this->head;
+	this->tail = tmp;
 }
 
 item * search(dlist * this, bool (* matches(item *))) {
-
+	
 	node * it = this->head;
 	node * prev = NULL, * next = NULL;
 	
+	// int i = 0;
 	while (it != NULL) {
+		
+		// printf("list[%i] = %i\n", i++, * (int *)it->thing);
 		
 		if (matches(it->thing))
 			return it->thing;
