@@ -48,7 +48,7 @@ void reverse(dlist * this) {
 	this->tail = tmp;
 }
 
-item * search(dlist * this, bool (* matches(item *))) {
+item * search(dlist * this, bool (* matches)(item *)) {
 	
 	node * it = this->head;
 	node * prev = NULL, * next = NULL;

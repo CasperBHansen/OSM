@@ -13,9 +13,9 @@
 
 int things[NUM_ITEMS] = { 1, 2, 4, 8 };
 
-bool * match_int(item * arg)
+bool match_int(item * arg)
 {
-	return (* (int *)arg == 4) ? arg : NULL;
+	return (* (int *)arg == 4) ? 1 : 0;
 }
 
 int main(int argc, char * argv[]) {
@@ -26,11 +26,11 @@ int main(int argc, char * argv[]) {
 	while (i < NUM_ITEMS) insert(list, &things[i++], 0);
 	
 	item * match = NULL;
-	match = search(list, &match_int);
+	match = search(list, match_int);
 	if (match) printf("Item %d found\n", * (int *)match);
 	
 	reverse(list);
-	match = search(list, &match_int);
+	match = search(list, match_int);
 	if (match) printf("Item %d found\n", * (int *)match);
 	
 	item * thing = NULL;
