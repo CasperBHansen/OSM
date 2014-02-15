@@ -1,15 +1,16 @@
 #!/bin/sh
 #
-# .folder-script - executed upon entering the directory.
+# setup.sh - executed upon entering the directory.
 #
 
-SRC_DIR='/home/casperbhansen/Development/OSM/src'
-TEST_DIR='/home/casperbhansen/Development/OSM/src/tests'
-FYAMS_DIR='/home/casperbhansen/Development/OSM/fyams/bin'
+OSM_DIR="/home/casperbhansen/Development/OSM"
+SRC_DIR="$OSM_DIR/src"
+TEST_DIR="$OSM_DIR/src/tests"
+FYAMS_DIR="$OSM_DIR/fyams/bin"
+
 if [[ $PATH != *$FYAMS_DIR* ]]
 then
     eval 'export PATH=$FYAMS_DIR:$PATH'
-else
 fi
 
 # harddisk control
