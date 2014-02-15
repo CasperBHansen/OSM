@@ -32,11 +32,14 @@ int main(int argc, char * argv[]) {
     match = search(list, match_int);
     if (match) printf("Item %d found\n", * (int *)match);
     
+    printf("Extracting..\n");
     item * thing = NULL;
-    thing = extract(list, 0);
-    if (thing) printf("Extracted item %i from the head.\n", * (int *)thing);
-    thing = extract(list, 1);
-    if (thing) printf("Extracted item %i from the tail.\n", * (int *)thing);
+    while (list->head) {
+        thing = extract(list, 0);
+        printf("%i\n", * (int *)(thing));
+    }
+    
+    free(list);
     
     return EXIT_SUCCESS;
 }
