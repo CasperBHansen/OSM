@@ -20,26 +20,26 @@ bool match_int(item * arg) {
 int main(int argc, char * argv[]) {
 
     dlist *list = malloc(sizeof(dlist));
-    
+
     int i = 0;
     while (i < NUM_ITEMS) insert(list, &things[i++], 0);
-    
+
     item * match = NULL;
     match = search(list, match_int);
     if (match) printf("Item %d found\n", * (int *)match);
-    
+
     reverse(list);
     match = search(list, match_int);
     if (match) printf("Item %d found\n", * (int *)match);
-    
+
     printf("Extracting..\n");
     item * thing = NULL;
     while (list->head) {
         thing = extract(list, 0);
         printf("%i\n", * (int *)(thing));
     }
-    
+
     free(list);
-    
+
     return EXIT_SUCCESS;
 }
