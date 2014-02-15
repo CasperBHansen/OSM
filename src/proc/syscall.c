@@ -62,10 +62,36 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_HALT:
         halt_kernel();
         break;
-    default: 
+    case SYSCALL_READ: {
+            uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+            uint32_t buffer  = user_context->cpu_regs[MIPS_REGISTER_A2];
+            uint32_t length  = user_context->cpu_regs[MIPS_REGISTER_A3];
+            handle_syscall_read(fhandle, buffer, length);
+        }
+        break;
+    case SYSCALL_WRITE: {
+            uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+            uint32_t buffer  = user_context->cpu_regs[MIPS_REGISTER_A2];
+            uint32_t length  = user_context->cpu_regs[MIPS_REGISTER_A3];
+            handle_syscall_write(fhandle, buffer, length);
+        }
+        break;
+    default:
         KERNEL_PANIC("Unhandled system call\n");
     }
 
     /* Move to next instruction after system call */
     user_context->pc += 4;
+}
+
+void handle_syscall_read(uint32_t fhandle, uint32_t buffer, uint32_t length) {
+    device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
+    gcd_t *gcd = (gcd_t *) dev->generic_device;
+    gcd->read(gcd, (void *) buffer, (int) length);
+}
+
+void handle_syscall_write(uint32_t fhandle, uint32_t buffer, uint32_t length) {
+    device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
+    gcd_t *gcd = (gcd_t *) dev->generic_device;
+    gcd->write(gcd, (void *) buffer, (int) length);
 }
