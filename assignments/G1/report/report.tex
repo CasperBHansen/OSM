@@ -146,24 +146,78 @@ int length = user_context->cpu_regs[MIPS_REGISTER_A3];
 The overall structure of both functions are more or less the same; check
 whether or not we are reading or writing from a source or destination that is
 supported (or required by the assignment). Otherwise we write an error code to
-register \code{V0}.
+register \code{V0}. Furthermore, in both cases we need to get the generic
+character device, as done on lines 2--3, which is almost shamelessly stolen
+from the \code{init\_startup\_fallback} function found in \file{init/main.c}.
+In either case, we have to return the length either read or written, which is
+done on line 5 --- note that the \code{len} variable isn't declared yet.
 
 \begin{lstlisting}
-if (/* supported source or destination */) {
+if (fhandle == /* supported source or destination */) {
+    device_t * dev = device_get(YAMS_TYPECODE_TTY, 0);
+    gcd_t * gcd = (gcd_t *) dev->generic_device;
     // system call specific code
+    user_context->cpu_regs[MIPS_REGISTER_V0] = len;
 }
 else {
     user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
 }
 \end{lstlisting}
 
-...
+That concludes common elements of the read and write function implementations.
 
 \subsection{Implementing read support}
-...
+In the case of read, we would like to ensure that the source, which is held
+in the \code{fhandle}, is equal to \code{FILEHANDLE\_STDIN}. Knowing that the
+source is correct, we can add the actual code specific to the read system
+call.
+
+Substituting the comment, we simply call the generic character device function
+pointer for reading, using the parameters passed. The final read function
+implementation is then as shown below.
+
+\begin{lstlisting}
+void handle_syscall_read(context_t * user_context) {
+    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint8_t * buffer = user_context->cpu_regs[MIPS_REGISTER_A2];
+    int length = user_context->cpu_regs[MIPS_REGISTER_A3];
+
+    if (fhandle == FILEHANDLE_STDIN) {
+        device_t * dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t * gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->read(gcd, buffer, length);
+        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
+    }
+    else {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+    }
+}
+\end{lstlisting}
 
 \subsection{Implementing write support}
-...
+For the write case, we wish to ensure that the destination, which is held in
+the \code{fhandle}, is equal to \code{FILEHANDLE\_STDOUT}. In much the same
+way as with read, we can now safely assume that we have a valid destination
+and substituting the comment, we simply call the generic character device
+function pointer for writing, we get the final write function implementation.
+
+\begin{lstlisting}
+void handle_syscall_read(context_t * user_context) {
+    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint8_t * buffer = user_context->cpu_regs[MIPS_REGISTER_A2];
+    int length = user_context->cpu_regs[MIPS_REGISTER_A3];
+
+    if (fhandle == FILEHANDLE_STDOUT) {
+        device_t * dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t * gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->write(gcd, buffer, length);
+        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
+    }
+    else {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+    }
+}
+\end{lstlisting}
 
 \end{document}
 
