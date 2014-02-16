@@ -113,10 +113,69 @@ insert at the head or at the tail of the list.
 
 
 \subsection{Extraction}
-...
+\begin{lstlisting}
+item * extract(dlist * this, bool atTail) {
+    item * ret = NULL;
+    if (!this->head) {
+        return NULL;
+    }
+    else if (atTail) {
+        // retrieve the item
+        node * n = this->tail;
+        ret = n->thing;
+        // correct the head and tail
+        node * prev = (node *) XOR_PTR(n->ptr, NULL);
+        if (!prev) this->head = NULL;
+        else prev->ptr = (node *) XOR_PTR(n, XOR_PTR(prev->ptr, NULL));
+        this->tail = prev;
+        // deallocate the node
+        if (n) free(n);
+        n = NULL;
+    }
+    else {
+        // retrieve the item
+        node * n = this->head;
+        ret = n->thing;
+        // correct the head and tail
+        node * next = (node *)XOR_PTR(n->ptr, NULL);
+        if (!next) this->tail = NULL;
+        else next->ptr = (node *) XOR_PTR(n, XOR_PTR(next->ptr, NULL));
+        this->head = next;
+        // deallocate the node
+        if (n) free(n);
+        n = NULL;
+    }
+    return ret;
+}
+\end{lstlisting}
+The extraction implementation is only dependant on the head and the tail. Thus
+there is no chain of XORed pointers that have to be updated, only the immediate 
+next node has to be updated and the dlist, ie. the struct pointing to the head
+and tail. Thus the time complexity is fixed, ie. constant time.\\
+Firsts checks if the list is empty, if so, return NULL. The next block is
+triggered if the atTail is true, ie. an extraction of the tail of the list. The
+next block is mostly the same, but extracts the head, so one explanation will
+suffice:
+The tail or head is assigned to a temporary variable n, and then ret is assigned
+the value helt by tail or head. A new node next is assigned the updated XORed
+pointer, if the next is empty, ie. the list is empty, the tail is set to NULL. 
+And then the next element in the list is updated to point to the right node.
+The node, if necessary, is deallocated.
 
 \subsection{Reverse}
-...
+\begin{lstlisting}
+void reverse(dlist * this) {
+    node * tmp = this->head;
+    this->head = this->tail;
+    this->tail = tmp;
+}
+\end{lstlisting}
+
+Since there is only ever gonna be three assignments, thus it will always take a
+fixed amount of time, ie. $O(3)$.\\
+What is happening is that the node head$_{this}$ is assigned to a temporary
+variable tmp, tail$_{this}$ is then assigned to head$_{this}$ and at last the
+tai$_{this}$ is assigned the value of tmp.
 
 \subsection{Search}
 ...
@@ -166,24 +225,78 @@ int length = user_context->cpu_regs[MIPS_REGISTER_A3];
 The overall structure of both functions are more or less the same; check
 whether or not we are reading or writing from a source or destination that is
 supported (or required by the assignment). Otherwise we write an error code to
-register \code{V0}.
+register \code{V0}. Furthermore, in both cases we need to get the generic
+character device, as done on lines 2--3, which is almost shamelessly stolen
+from the \code{init\_startup\_fallback} function found in \file{init/main.c}.
+In either case, we have to return the length either read or written, which is
+done on line 5 --- note that the \code{len} variable isn't declared yet.
 
 \begin{lstlisting}
-if (/* supported source or destination */) {
+if (fhandle == /* supported source or destination */) {
+    device_t * dev = device_get(YAMS_TYPECODE_TTY, 0);
+    gcd_t * gcd = (gcd_t *) dev->generic_device;
     // system call specific code
+    user_context->cpu_regs[MIPS_REGISTER_V0] = len;
 }
 else {
     user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
 }
 \end{lstlisting}
 
-...
+That concludes common elements of the read and write function implementations.
 
 \subsection{Implementing read support}
-...
+In the case of read, we would like to ensure that the source, which is held
+in the \code{fhandle}, is equal to \code{FILEHANDLE\_STDIN}. Knowing that the
+source is correct, we can add the actual code specific to the read system
+call.
+
+Substituting the comment, we simply call the generic character device function
+pointer for reading, using the parameters passed. The final read function
+implementation is then as shown below.
+
+\begin{lstlisting}
+void handle_syscall_read(context_t * user_context) {
+    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint8_t * buffer = user_context->cpu_regs[MIPS_REGISTER_A2];
+    int length = user_context->cpu_regs[MIPS_REGISTER_A3];
+
+    if (fhandle == FILEHANDLE_STDIN) {
+        device_t * dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t * gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->read(gcd, buffer, length);
+        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
+    }
+    else {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+    }
+}
+\end{lstlisting}
 
 \subsection{Implementing write support}
-...
+For the write case, we wish to ensure that the destination, which is held in
+the \code{fhandle}, is equal to \code{FILEHANDLE\_STDOUT}. In much the same
+way as with read, we can now safely assume that we have a valid destination
+and substituting the comment, we simply call the generic character device
+function pointer for writing, we get the final write function implementation.
+
+\begin{lstlisting}
+void handle_syscall_read(context_t * user_context) {
+    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint8_t * buffer = user_context->cpu_regs[MIPS_REGISTER_A2];
+    int length = user_context->cpu_regs[MIPS_REGISTER_A3];
+
+    if (fhandle == FILEHANDLE_STDOUT) {
+        device_t * dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t * gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->write(gcd, buffer, length);
+        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
+    }
+    else {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+    }
+}
+\end{lstlisting}
 
 \end{document}
 
