@@ -1,7 +1,4 @@
 #!/bin/sh
-#
-# setup.sh - executed upon entering the directory.
-#
 
 OSM_DIR="/home/casperbhansen/Development/OSM"
 SRC_DIR="$OSM_DIR/src"
@@ -48,6 +45,18 @@ hd () {
             $UTIL delete $HD $2
         else
             echo "Usage (delete): $0 delete <file>"
+            return 2
+        fi
+    fi
+    
+    if [[ "$1" == "update" ]];
+    then
+        if [[ "$2" != "" ]];
+        then
+            $UTIL delete $HD $2
+            $UTIL write $HD $TEST_DIR/$2 $2
+        else
+            echo "Usage (update): $0 update <file>"
             return 2
         fi
     fi
