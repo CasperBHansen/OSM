@@ -10,7 +10,7 @@
 
 typedef unsigned long ptr_addr_t;
 
-#define XOR_PTR(a, b) ((ptr_addr_t)a ^ (ptr_addr_t)b)
+#define XOR_PTR(a, b) ( (ptr_addr_t)a ^ (ptr_addr_t)b )
 
 void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
