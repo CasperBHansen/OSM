@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdint.h> // uintptr_t for XOR'ing pointers
+#include <stdio.h>
 
 #define XOR_PTR(a, b) ( (uintptr_t)a ^ (uintptr_t)b )
 
@@ -88,4 +89,17 @@ item * search(dlist * this, bool (* matches)(item *)) {
         it = next;
     }
     return NULL;
+}
+
+void print_int_list(dlist *this) {
+    node *curr = this->head;
+    node *prev = NULL, *next = NULL;
+
+    while (curr != NULL) {
+        printf("%d ", *(int *) curr->thing);
+        next = (node *) XOR_PTR(prev, curr->ptr);
+        prev = curr;
+        curr = next;
+    }
+    printf("\n");
 }

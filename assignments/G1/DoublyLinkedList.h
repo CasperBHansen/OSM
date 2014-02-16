@@ -23,5 +23,6 @@ void insert(dlist *this, item *thing, bool atTail);
 item * extract(dlist *this, bool atTail);
 void reverse(dlist *this);
 item * search(dlist *this, bool (*matches)(item *));
+void print_int_list(dlist *this);
 
 #endif
