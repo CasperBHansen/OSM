@@ -101,7 +101,62 @@ preprocessor before compilation of the code occurs.
 \subsection{Search}
 ...
 
+\newpage
 \section{Buenos}
+For the implementation of read/write support in the Buenos operating system,
+we chose to keep the extensions within the \file{proc/syscall.c}. We declared
+functions in \file{proc/syscall.h} that have to do specifically with the
+system call being handled. The following code excerpt are the declarations
+found in \file{proc/syscall.h}.
+
+\begin{lstlisting}
+void handle_syscall_read(context_t * user_context);
+void handle_syscall_write(context_t * user_context);
+\end{lstlisting}
+
+Preliminary preparations were done by adding cases for the two new system
+calls, namely \code{SYSCALL\_READ} and \code{SYSCALL\_WRITE}, in the switch
+statement. In these we simply called the newly declared functions, whose
+bodies were left empty. Additionally, after running a simple test checking
+whether or not these were actually called, we discovered that the program was
+not being shutdown gracefully as we were getting a kernel panic of an
+unhandled system call case, which after printing the case value we found to be
+the \code{SYSCALL\_EXIT} case. We decided to add it to the switch statement
+and handle it by simply replicating the body of \code{SYSCALL\_HALT}, although
+we recognize that it may require additional implementation.
+
+\subsection{Read/write commonalities}
+Since the read and write functions have much in common, we will address these
+common elements, like initialization, before moving on to their respective
+implementations in which they differ.
+
+Both functions require us to extract the arguments stored in CPU registers
+\code{A1}, \code{A2} and \code{A3}, and since both functions use the arguments
+for the same basic purpose, the types remain the same and hence initialization
+of both functions also remains the same. An excerpt of the initialization code
+of both \code{handle\_syscall\_read} and \code{handle\_syscall\_write} is
+provided below.
+
+\begin{lstlisting}
+uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+uint8_t * buffer = user_context->cpu_regs[MIPS_REGISTER_A2];
+int length = user_context->cpu_regs[MIPS_REGISTER_A3];
+\end{lstlisting}
+
+The overall structure of both functions are more or less the same; check
+whether or not we are reading or writing from a source or destination that is
+supported (or required by the assignment). Otherwise we write an error code to
+register \code{V0}.
+
+\begin{lstlisting}
+if (/* supported source or destination */) {
+    // system call specific code
+}
+else {
+    user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+}
+\end{lstlisting}
+
 ...
 
 \subsection{Implementing read support}
