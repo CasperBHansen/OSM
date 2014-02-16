@@ -79,11 +79,11 @@ doubly-linked list by making a few remarks. Note that because of the
 implementations extensive use of the XOR-operation, and the fact that this
 operation requires type-casting in all occurences of its use, we have declared
 a preprocessor definition macro \code{XOR\_PTR} that relieves much repetitive
-typing and makes the code a lot more readable--- an excerpt of the code
+typing and makes the code a lot more readable -- an excerpt of the code
 showing this macro has been provided below.
 
 \begin{lstlisting}
-#define XOR_PTR(a, b) ( (uintptr_t)a ^ (uintptr_t)b )
+#define XOR_PTR(a, b) ((node *) ((uintptr_t) (a) ^ (uintptr_t) (b)))
 \end{lstlisting}
 
 It should be noted that uses of preprocessor definitions are expanded by the
@@ -111,10 +111,9 @@ the aforementioned \lstinline{XOR_PTR} macro) to the node before and the node
 after the node. E.g., given a list of nodes \verb|A B C|, this allows the pointer to
 node C to be calculated from the node pointer \code{ptr} in \verb|B| and the
 address of \verb|A| as the pointer \code{A XOR ptr}. The head and tail of a list
-contains the address of the second first/last node, respectively, since the node
-before the head or after the tail, conceptually speaking, is just \code{NULL}
-and \code{NULL XOR X = X}.
-
+contains the address of the second first or second last node, respectively,
+since the node before the head or after the tail, conceptually speaking, is just
+\code{NULL} and \code{NULL XOR X = X}.
 
 
 \subsection{Insertion}
@@ -124,9 +123,53 @@ specified in the task description.
 void insert(dlist *this, item *thing, bool atTail);
 \end{lstlisting}
 The function takes as arguments, a pointer to a doubly-linked list, a pointer to
-the item to be inserted in the list and a boolean value indicating whether to
-insert at the head or at the tail of the list.
+the item to be inserted in the list and a boolean (synonym for \code{int}) value
+indicating whether to insert at the head or at the tail of the list.
+Memory is allocated for the new node using \code{malloc} and the structure
+member \code{thing} is set to the the item given as argument, which places a
+pointer to the list element in the new node. If the list is empty, i.e. if the
+head pointer is \code{NULL}, the head and tail pointers in the list are updated
+to the address of the inserted node and the \verb|XOR|ed pointer in the node is set to
+\code{NULL} since there are no nodes before or after it. Otherwise, that is if
+the list contains at least one node, the pointer in the new node is assigned the
+value of head/tail since \code{NULL} is an identity element of the XOR operator,
+i.e. \verb|X XOR NULL = X| for any \verb|X|. The pointer in the current
+head/tail node is updated to contain a pointer to the new node XORed the pointer
+stored in the current head/tail, since that already contains the address of the
+next/previous node. The head/tail pointer in the list is updated to the address
+of the inserted node. The \code{insert} function is shown below.
+\begin{lstlisting}
+void insert(dlist *this, item *thing, bool atTail) {
+    // initialize new node
+    node *new = malloc(sizeof(node));
+    new->thing = thing;
 
+    // empty list
+    if (!this->head) {
+        new->ptr = NULL;
+        this->head = this->tail = new;
+    }
+    // if we're appending to the tail of the list
+    else if (atTail) {
+        // XORed pointer is just this->tail since NULL XOR tail = tail
+        new->ptr = this->tail;
+        // this->tail->ptr contains the address of the node before tail
+        this->tail->ptr = XOR_PTR(new, this->tail->ptr);
+        this->tail = new;
+    }
+    // if we're appending to the head of the list
+    else {
+        // XORed pointer is just this->head since NULL XOR head = head
+        new->ptr = this->head;
+        // this->head->ptr contains the address of the node after head
+        this->head->ptr = XOR_PTR(new, this->head->ptr);
+        this->head = new;
+    }
+}
+\end{lstlisting}
+Since the code only contains conditional expressions and a fixed number of
+assignments, it is clear that its running time is \(O(1)\), i.e. constant, which
+is exactly what was required by our boss at Jyrki Katajainen and Company.
 
 \subsection{Extraction}
 \begin{lstlisting}
