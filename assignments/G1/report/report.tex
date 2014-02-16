@@ -93,10 +93,69 @@ preprocessor before compilation of the code occurs.
 ...
 
 \subsection{Extraction}
-...
+\begin{lstlisting}
+item * extract(dlist * this, bool atTail) {
+    item * ret = NULL;
+    if (!this->head) {
+        return NULL;
+    }
+    else if (atTail) {
+        // retrieve the item
+        node * n = this->tail;
+        ret = n->thing;
+        // correct the head and tail
+        node * prev = (node *) XOR_PTR(n->ptr, NULL);
+        if (!prev) this->head = NULL;
+        else prev->ptr = (node *) XOR_PTR(n, XOR_PTR(prev->ptr, NULL));
+        this->tail = prev;
+        // deallocate the node
+        if (n) free(n);
+        n = NULL;
+    }
+    else {
+        // retrieve the item
+        node * n = this->head;
+        ret = n->thing;
+        // correct the head and tail
+        node * next = (node *)XOR_PTR(n->ptr, NULL);
+        if (!next) this->tail = NULL;
+        else next->ptr = (node *) XOR_PTR(n, XOR_PTR(next->ptr, NULL));
+        this->head = next;
+        // deallocate the node
+        if (n) free(n);
+        n = NULL;
+    }
+    return ret;
+}
+\end{lstlisting}
+The extraction implementation is only dependant on the head and the tail. Thus
+there is no chain of XORed pointers that have to be updated, only the immediate 
+next node has to be updated and the dlist, ie. the struct pointing to the head
+and tail. Thus the time complexity is fixed, ie. constant time.\\
+Firsts checks if the list is empty, if so, return NULL. The next block is
+triggered if the atTail is true, ie. an extraction of the tail of the list. The
+next block is mostly the same, but extracts the head, so one explanation will
+suffice:
+The tail or head is assigned to a temporary variable n, and then ret is assigned
+the value helt by tail or head. A new node next is assigned the updated XORed
+pointer, if the next is empty, ie. the list is empty, the tail is set to NULL. 
+And then the next element in the list is updated to point to the right node.
+The node, if necessary, is deallocated.
 
 \subsection{Reverse}
-...
+\begin{lstlisting}
+void reverse(dlist * this) {
+    node * tmp = this->head;
+    this->head = this->tail;
+    this->tail = tmp;
+}
+\end{lstlisting}
+
+Since there is only ever gonna be three assignments, thus it will always take a
+fixed amount of time, ie. $O(3)$.\\
+What is happening is that the node head$_{this}$ is assigned to a temporary
+variable tmp, tail$_{this}$ is then assigned to head$_{this}$ and at last the
+tai$_{this}$ is assigned the value of tmp.
 
 \subsection{Search}
 ...
