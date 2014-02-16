@@ -10,7 +10,7 @@
 #include <stdint.h> // uintptr_t for XOR'ing pointers
 #include <stdio.h>
 
-#define XOR_PTR(a, b) ( (uintptr_t)a ^ (uintptr_t)b )
+#define XOR_PTR(a, b) ((node *) ((uintptr_t) (a) ^ (uintptr_t) (b)))
 
 void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
@@ -27,7 +27,7 @@ void insert(dlist *this, item *thing, bool atTail) {
         // XORed pointer is just this->tail since NULL XOR tail = tail
         new->ptr = this->tail;
         // this->tail->ptr contains the address of the node before tail
-        this->tail->ptr = (node *) XOR_PTR(new, this->tail->ptr);
+        this->tail->ptr = XOR_PTR(new, this->tail->ptr);
         this->tail = new;
     }
     // if we're appending to the head of the list
@@ -35,7 +35,7 @@ void insert(dlist *this, item *thing, bool atTail) {
         // XORed pointer is just this->head since NULL XOR head = head
         new->ptr = this->head;
         // this->head->ptr contains the address of the node after head
-        this->head->ptr = (node *) XOR_PTR(new, this->head->ptr);
+        this->head->ptr = XOR_PTR(new, this->head->ptr);
         this->head = new;
     }
 }
@@ -50,9 +50,9 @@ item * extract(dlist * this, bool atTail) {
         node * n = this->tail;
         ret = n->thing;
         // correct the head and tail
-        node * prev = (node *) XOR_PTR(n->ptr, NULL);
+        node * prev = XOR_PTR(n->ptr, NULL);
         if (!prev) this->head = NULL;
-        else prev->ptr = (node *) XOR_PTR(n, XOR_PTR(prev->ptr, NULL));
+        else prev->ptr = XOR_PTR(n, XOR_PTR(prev->ptr, NULL));
         this->tail = prev;
         // deallocate the node
         if (n) free(n);
@@ -63,9 +63,9 @@ item * extract(dlist * this, bool atTail) {
         node * n = this->head;
         ret = n->thing;
         // correct the head and tail
-        node * next = (node *)XOR_PTR(n->ptr, NULL);
+        node * next = XOR_PTR(n->ptr, NULL);
         if (!next) this->tail = NULL;
-        else next->ptr = (node *) XOR_PTR(n, XOR_PTR(next->ptr, NULL));
+        else next->ptr = XOR_PTR(n, XOR_PTR(next->ptr, NULL));
         this->head = next;
         // deallocate the node
         if (n) free(n);
@@ -88,7 +88,7 @@ item * search(dlist * this, bool (* matches)(item *)) {
         if (matches(it->thing))
             return it->thing;
 
-        next = (node *) XOR_PTR(prev, it->ptr);
+        next = XOR_PTR(prev, it->ptr);
         prev = it;
         it = next;
     }
@@ -101,7 +101,7 @@ void print_int_list(dlist *this) {
 
     while (curr != NULL) {
         printf("%d ", *(int *) curr->thing);
-        next = (node *) XOR_PTR(prev, curr->ptr);
+        next = XOR_PTR(prev, curr->ptr);
         prev = curr;
         curr = next;
     }
