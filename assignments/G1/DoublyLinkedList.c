@@ -7,10 +7,9 @@
 #include "DoublyLinkedList.h"
 
 #include <stdlib.h>
+#include <stdint.h> // uintptr_t for XORing pointers
 
-typedef unsigned long ptr_addr_t;
-
-#define XOR_PTR(a, b) ((ptr_addr_t)a ^ (ptr_addr_t)b)
+#define XOR_PTR(a, b) ((uintptr_t) (a) ^ (uintptr_t) (b))
 
 void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
@@ -77,7 +76,6 @@ void reverse(dlist * this) {
 }
 
 item * search(dlist * this, bool (* matches)(item *)) {
-
     node * it = this->head;
     node * prev = NULL, * next = NULL;
 
@@ -89,6 +87,5 @@ item * search(dlist * this, bool (* matches)(item *)) {
         prev = it;
         it = next;
     }
-
     return NULL;
 }
