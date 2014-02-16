@@ -26,14 +26,16 @@ void insert(dlist *this, item *thing, bool atTail) {
     else if (atTail) {
         // XORed pointer is just this->tail since NULL XOR tail = tail
         new->ptr = this->tail;
-        this->tail->ptr = (node *) XOR_PTR(new, XOR_PTR(this->tail->ptr, NULL));
+        // this->tail->ptr contains the address of the node before tail
+        this->tail->ptr = (node *) XOR_PTR(new, this->tail->ptr);
         this->tail = new;
     }
     // if we're appending to the head of the list
     else {
         // XORed pointer is just this->head since NULL XOR head = head
         new->ptr = this->head;
-        this->head->ptr = (node *) XOR_PTR(new, XOR_PTR(this->head->ptr, NULL));
+        // this->head->ptr contains the address of the node after head
+        this->head->ptr = (node *) XOR_PTR(new, this->head->ptr);
         this->head = new;
     }
 }
