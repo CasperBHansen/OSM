@@ -89,16 +89,32 @@ showing this macro has been provided below.
 It should be noted that uses of preprocessor definitions are expanded by the
 preprocessor before compilation of the code occurs.\\
 \\
-The data structure to hold the list is given in the following code excerpt. One
-struct \code{dlist} contains a pointer, of type \code{node} pointer, to the head
-and one to the tail of the list. Another stuct of type \code{node} contains a
-\code{void} pointer to the \code{item} in the node and a recursive \code{node}
+The data structure to hold the list is given in the following code excerpt. The
+type \code{item} is defined as a synonym for \code{void}, meaning that a
+\code{item} pointer will hold any type of element.
+\begin{lstlisting}
+typedef struct node {
+    item * thing;
+    struct node * ptr;
+} node;
+
+typedef struct dlist {
+    node * head, * tail;
+} dlist;
+\end{lstlisting}
+The struct, \code{dlist}, contains a pointer, of type \code{node} pointer, to the
+head and one to the tail of the list. Another stuct of type \code{node} contains
+a \code{void} pointer to the \code{item} in the node and a recursive \code{node}
 pointer. This \code{node} pointer contains a pointer that is computed by
 applying the XOR operator (\lstinline{^} as applied to pointer variables using
 the aforementioned \lstinline{XOR_PTR} macro) to the node before and the node
-after the node. Given a list of nodes \verb|A B C|, this allows the pointer to
+after the node. E.g., given a list of nodes \verb|A B C|, this allows the pointer to
 node C to be calculated from the node pointer \code{ptr} in \verb|B| and the
-address of \verb|A| as the pointer \code{A XOR ptr}.
+address of \verb|A| as the pointer \code{A XOR ptr}. The head and tail of a list
+contains the address of the second first/last node, respectively, since the node
+before the head or after the tail, conceptually speaking, is just \code{NULL}
+and \code{NULL XOR X = X}.
+
 
 
 \subsection{Insertion}
