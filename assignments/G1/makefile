@@ -10,7 +10,6 @@ PACK_NAME=hansen_hovgaard
 PACK_FILES=makefile *.{c,h,pdf} ../src
 
 build:
-	clear
 	$(CC) -c $(LDFLAGS) $(SRC)
 	$(CC) $(OBJ) -o $(OUT)
 

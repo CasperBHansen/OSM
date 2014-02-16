@@ -75,22 +75,15 @@
 
 \section{Space-efficient doubly-linked list}
 We will begin our discussion of our implementation of the space-efficient
-doubly-linked list by making a few remarks. Please note that on line 11 we
-have declared a type definition \code{ptr\_addr\_t} that makes for better
-readability of the code --- an excerpt of the code below gives the definition.
+doubly-linked list by making a few remarks. Note that because of the
+implementations extensive use of the XOR-operation, and the fact that this
+operation requires type-casting in all occurences of its use, we have declared
+a preprocessor definition macro \code{XOR\_PTR} that relieves much repetitive
+typing and makes the code a lot more readable--- an excerpt of the code
+showing this macro has been provided below.
 
 \begin{lstlisting}
-typedef unsigned long ptr_addr_t
-\end{lstlisting}
-
-Furthermore, note that because of the implementations extensive use of the
-XOR-operation, and the fact that this operation requires type-casting in all
-occurences of its use, we have declared a preprocessor definition macro
-\code{XOR\_PTR} that relieves much repetitive typing --- an excerpt of the
-code showing this macro has been provided below.
-
-\begin{lstlisting}
-#define XOR_PTR(a, b) ( (ptr_addr_t)a ^ (ptr_addr_t)b )
+#define XOR_PTR(a, b) ( (uintptr_t)a ^ (uintptr_t)b )
 \end{lstlisting}
 
 It should be noted that preprocessor definitions are expanded by the
