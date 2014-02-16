@@ -6,8 +6,8 @@ SRC=*.c
 OBJ=*.o
 
 # package macros
-PACK_NAME=hansen_hovgaard
-PACK_FILES=makefile *.{c,h,pdf} ../src
+PACK_NAME=hansen_hansen_hovgaard
+PACK_FILES=makefile *.{c,h} report/{makefile,*.{tex,pdf}} ../../src
 
 build:
 	$(CC) -c $(LDFLAGS) $(SRC)
@@ -17,7 +17,7 @@ run:
 	./$(OUT)
 
 pack:
-	zip $(PACK_NAME)_$(shell basename ${PWD}) $(PACK_FILES)
+	zip $(PACK_NAME)_$(shell basename ${PWD}) -r $(PACK_FILES)
 
 clean:
 	rm -rf *.o $(PACK_NAME).zip .*.*.{swp,swo} .*.{swp,swo}
