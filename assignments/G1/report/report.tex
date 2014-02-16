@@ -87,10 +87,30 @@ showing this macro has been provided below.
 \end{lstlisting}
 
 It should be noted that uses of preprocessor definitions are expanded by the
-preprocessor before compilation of the code occurs.
+preprocessor before compilation of the code occurs.\\
+\\
+The data structure to hold the list is given in the following code excerpt. One
+struct \code{dlist} contains a pointer, of type \code{node} pointer, to the head
+and one to the tail of the list. Another stuct of type \code{node} contains a
+\code{void} pointer to the \code{item} in the node and a recursive \code{node}
+pointer. This \code{node} pointer contains a pointer that is computed by
+applying the XOR operator (\lstinline{^} as applied to pointer variables using
+the aforementioned \lstinline{XOR_PTR} macro) to the node before and the node
+after the node. Given a list of nodes \verb|A B C|, this allows the pointer to
+node C to be calculated from the node pointer \code{ptr} in \verb|B| and the
+address of \verb|A| as the pointer \code{A XOR ptr}.
+
 
 \subsection{Insertion}
-...
+The insertion operation is implemented as the following function declaration, as
+specified in the task description.
+\begin{lstlisting}
+void insert(dlist *this, item *thing, bool atTail);
+\end{lstlisting}
+The function takes as arguments, a pointer to a doubly-linked list, a pointer to
+the item to be inserted in the list and a boolean value indicating whether to
+insert at the head or at the tail of the list.
+
 
 \subsection{Extraction}
 ...
