@@ -103,7 +103,7 @@ typedef struct dlist {
 } dlist;
 \end{lstlisting}
 The struct, \code{dlist}, contains a pointer, of type \code{node} pointer, to
-the head and one to the tail of the list. Another stuct of type \code{node}
+the head and one to the tail of the list. Another struct of type \code{node}
 contains a \code{item} (\code{void}) pointer to the \code{item} in the node and
 a recursive \code{node} pointer. This \code{node} pointer contains a pointer
 that is computed by applying the XOR operator (\lstinline{^} as applied to
@@ -116,7 +116,6 @@ first or second last node, respectively, since the node before the head or after
 the tail, conceptually speaking, is just \code{NULL} and \code{NULL} is an
 identity element of the XOR operator, i.e. \code{NULL XOR X = X} for any
 \code{X}.
-
 
 \subsection{Insertion}
 The insertion operation is implemented as the following function declaration, as
@@ -177,6 +176,19 @@ assignments, it is clear that its running time is \(O(1)\), i.e. constant, which
 is exactly what was required by our boss at Jyrki Katajainen and Company.
 
 \subsection{Extraction}
+The extraction implementation is only dependant on the head and the tail. Thus
+there is no chain of XORed pointers that have to be updated, only the immediate 
+next node has to be updated and the dlist, ie. the struct pointing to the head
+and tail. Thus the time complexity is fixed, ie. constant time.\\
+Firsts checks if the list is empty, if so, return NULL. The next block is
+triggered if the atTail is true, ie. an extraction of the tail of the list. The
+next block is mostly the same, but extracts the head, so one explanation will
+suffice:
+The tail or head is assigned to a temporary variable n, and then ret is assigned
+the value helt by tail or head. A new node next is assigned the updated XORed
+pointer, if the next is empty, ie. the list is empty, the tail is set to NULL. 
+And then the next element in the list is updated to point to the right node.
+The node, if necessary, is deallocated.
 \begin{lstlisting}
 item * extract(dlist * this, bool atTail) {
     item * ret = NULL;
@@ -212,21 +224,14 @@ item * extract(dlist * this, bool atTail) {
     return ret;
 }
 \end{lstlisting}
-The extraction implementation is only dependant on the head and the tail. Thus
-there is no chain of XORed pointers that have to be updated, only the immediate 
-next node has to be updated and the dlist, ie. the struct pointing to the head
-and tail. Thus the time complexity is fixed, ie. constant time.\\
-Firsts checks if the list is empty, if so, return NULL. The next block is
-triggered if the atTail is true, ie. an extraction of the tail of the list. The
-next block is mostly the same, but extracts the head, so one explanation will
-suffice:
-The tail or head is assigned to a temporary variable n, and then ret is assigned
-the value helt by tail or head. A new node next is assigned the updated XORed
-pointer, if the next is empty, ie. the list is empty, the tail is set to NULL. 
-And then the next element in the list is updated to point to the right node.
-The node, if necessary, is deallocated.
 
 \subsection{Reverse}
+There is only ever going to be three assignments, thus it will always take a
+fixed amount of time, ie. $O(3) = O(1)$.\\
+What is happening is that the node head$_{this}$ is assigned to a temporary
+variable tmp, tail$_{this}$ is then assigned to head$_{this}$ and at last the
+tail$_{this}$ is assigned the value of tmp.
+
 \begin{lstlisting}
 void reverse(dlist * this) {
     node * tmp = this->head;
@@ -234,12 +239,6 @@ void reverse(dlist * this) {
     this->tail = tmp;
 }
 \end{lstlisting}
-
-Since there is only ever gonna be three assignments, thus it will always take a
-fixed amount of time, ie. $O(3)$.\\
-What is happening is that the node head$_{this}$ is assigned to a temporary
-variable tmp, tail$_{this}$ is then assigned to head$_{this}$ and at last the
-tai$_{this}$ is assigned the value of tmp.
 
 \subsection{Search}
 ...
