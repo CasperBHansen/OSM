@@ -239,6 +239,21 @@ void reverse(dlist * this) {
 \subsection{Search}
 ...
 
+\subsection{Testing}
+Testing of the aforementioned functions are written in main.c. We have included
+a prettyprint function to better be able to show the consequences of the
+functions tasked by the assignment.\\
+The testing is done by first creating a list, then using the insert-function to
+insert some integers into the list. The list is then printed, to show that the
+list is indeed being populated. Thereafter the search-function is being tested,
+if the integer is found then a message is printed. Next up is the
+reverse-function, after issuing the function, the list will be printed again, to
+show that the list has been reversed. The search function is tested again, for
+good riddance. At last the whole list is extracted, thus showing that the
+extraction does indeed remove the item from the list, otherwise it would end up
+in a never ending loop. At last the list is freed up, allowing other programs to
+use the memory again.
+
 \newpage
 \section{Buenos}
 For the implementation of read/write support in the Buenos operating system,
