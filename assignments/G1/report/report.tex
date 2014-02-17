@@ -121,9 +121,11 @@ identity element of the XOR operator, i.e. \code{NULL XOR X = X} for any
 \subsection{Insertion}
 The insertion operation is implemented as the following function declaration, as
 specified in the task description.
+
 \begin{lstlisting}
 void insert(dlist *this, item *thing, bool atTail);
 \end{lstlisting}
+
 The function takes as arguments, a pointer to a doubly-linked list, a pointer to
 the item to be inserted in the list and a boolean (synonym for \code{int}) value
 indicating whether to insert at the head or at the tail of the list.
@@ -139,6 +141,7 @@ to contain a pointer to the new node XORed the pointer stored in the current
 head/tail, since that already contains the address of the next/previous node.
 The head/tail pointer in the list is updated to the address of the inserted
 node. The \code{insert} function is shown below.
+
 \begin{lstlisting}
 void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
@@ -168,6 +171,7 @@ void insert(dlist *this, item *thing, bool atTail) {
     }
 }
 \end{lstlisting}
+
 Since the code only contains conditional expressions and a fixed number of
 assignments, it is clear that its running time is \(O(1)\), i.e. constant, which
 is exactly what was required by our boss at Jyrki Katajainen and Company.
