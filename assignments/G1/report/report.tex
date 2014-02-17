@@ -19,7 +19,7 @@
 
 \lstset
 {
-    language=C++,
+    language=C,
     % general settings
     numbers=left,
     frame=single,
@@ -57,7 +57,7 @@
     {\tt cdn768@alumni.ku.dk}
 }
 
-\date{last revision \today}
+\date{Last revision: \today}
 
 \begin{document}
 
@@ -102,19 +102,20 @@ typedef struct dlist {
     node * head, * tail;
 } dlist;
 \end{lstlisting}
-The struct, \code{dlist}, contains a pointer, of type \code{node} pointer, to the
-head and one to the tail of the list. Another struct of type \code{node} contains
-a \code{void} pointer to the \code{item} in the node and a recursive \code{node}
-pointer. This \code{node} pointer contains a pointer that is computed by
-applying the XOR operator (\lstinline{^} as applied to pointer variables using
-the aforementioned \lstinline{XOR_PTR} macro) to the node before and the node
-after the node. E.g., given a list of nodes \verb|A B C|, this allows the pointer to
-node C to be calculated from the node pointer \code{ptr} in \verb|B| and the
-address of \verb|A| as the pointer \code{A XOR ptr}. The head and tail of a list
-contains the address of the second first or second last node, respectively,
-since the node before the head or after the tail, conceptually speaking, is just
-\code{NULL} and \code{NULL XOR X = X}.
-
+The struct, \code{dlist}, contains a pointer, of type \code{node} pointer, to
+the head and one to the tail of the list. Another struct of type \code{node}
+contains a \code{item} (\code{void}) pointer to the \code{item} in the node and
+a recursive \code{node} pointer. This \code{node} pointer contains a pointer
+that is computed by applying the XOR operator (\lstinline{^} as applied to
+pointer variables using the aforementioned \lstinline{XOR_PTR} macro) to the
+node before and the node after the node. E.g., given a list of nodes
+\verb|A B C|, this allows the pointer to node C to be calculated from the node
+pointer \code{ptr} in \verb|B| and the address of \verb|A| as the pointer
+\code{A XOR ptr}. The head and tail of a list contains the address of the second
+first or second last node, respectively, since the node before the head or after
+the tail, conceptually speaking, is just \code{NULL} and \code{NULL} is an
+identity element of the XOR operator, i.e. \code{NULL XOR X = X} for any
+\code{X}.
 
 \subsection{Insertion}
 The insertion operation is implemented as the following function declaration, as
@@ -132,12 +133,11 @@ head pointer is \code{NULL}, the head and tail pointers in the list are updated
 to the address of the inserted node and the \verb|XOR|ed pointer in the node is set to
 \code{NULL} since there are no nodes before or after it. Otherwise, that is if
 the list contains at least one node, the pointer in the new node is assigned the
-value of head/tail since \code{NULL} is an identity element of the XOR operator,
-i.e. \verb|X XOR NULL = X| for any \verb|X|. The pointer in the current
-head/tail node is updated to contain a pointer to the new node XORed the pointer
-stored in the current head/tail, since that already contains the address of the
-next/previous node. The head/tail pointer in the list is updated to the address
-of the inserted node. The \code{insert} function is shown below.
+value of head/tail pointer. The pointer in the current head/tail node is updated
+to contain a pointer to the new node XORed the pointer stored in the current
+head/tail, since that already contains the address of the next/previous node.
+The head/tail pointer in the list is updated to the address of the inserted
+node. The \code{insert} function is shown below.
 \begin{lstlisting}
 void insert(dlist *this, item *thing, bool atTail) {
     // initialize new node
@@ -222,11 +222,11 @@ item * extract(dlist * this, bool atTail) {
 \end{lstlisting}
 
 \subsection{Reverse}
-Since there is only ever gonna be three assignments, thus it will always take a
+There is only ever going to be three assignments, thus it will always take a
 fixed amount of time, ie. $O(3) = O(1)$.\\
 What is happening is that the node head$_{this}$ is assigned to a temporary
 variable tmp, tail$_{this}$ is then assigned to head$_{this}$ and at last the
-tai$_{this}$ is assigned the value of tmp.
+tail$_{this}$ is assigned the value of tmp.
 
 \begin{lstlisting}
 void reverse(dlist * this) {
