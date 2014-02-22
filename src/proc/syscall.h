@@ -37,8 +37,6 @@
 #ifndef BUENOS_PROC_SYSCALL
 #define BUENOS_PROC_SYSCALL
 
-#include "kernel/cswitch.h"
-
 /* Syscall function numbers. You may add to this list but do not
  * modify the existing ones.
  */
@@ -62,8 +60,5 @@
 #define FILEHANDLE_STDIN 0
 #define FILEHANDLE_STDOUT 1
 #define FILEHANDLE_STDERR 2
-
-void handle_syscall_read(context_t *user_context);
-void handle_syscall_write(context_t *user_context);
 
 #endif

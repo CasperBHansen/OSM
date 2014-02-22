@@ -42,6 +42,48 @@
 #include "drivers/device.h"
 #include "drivers/gcd.h"
 
+
+/**
+ * Handle SYSCALL_READ syscall.
+ */
+void handle_syscall_read(context_t *user_context) {
+    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint8_t *buffer  = (uint8_t *) user_context->cpu_regs[MIPS_REGISTER_A2];
+    int length  = user_context->cpu_regs[MIPS_REGISTER_A3];
+
+    if (fhandle == FILEHANDLE_STDIN) {
+        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t *gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->read(gcd, buffer, length);
+        // buffer[len] = '\0';
+        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
+    } else {
+        // error; reading from other files unimplemented
+        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+    }
+}
+
+/**
+ * Handle SYSCALL_WRITE syscall.
+ */
+void handle_syscall_write(context_t *user_context) {
+    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint8_t *buffer  = (uint8_t *) user_context->cpu_regs[MIPS_REGISTER_A2];
+    uint32_t length  = user_context->cpu_regs[MIPS_REGISTER_A3];
+
+    if (fhandle == FILEHANDLE_STDOUT) {
+        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t *gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->write(gcd, buffer, (int) length);
+        // null terminate, TODO: avoid overflow
+        //buffer[len] = '\0';
+        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
+    } else {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
+    }
+}
+
+
 /**
  * Handle system calls. Interrupts are enabled when this function is
  * called.
@@ -80,38 +122,4 @@ void syscall_handle(context_t *user_context)
 
     /* Move to next instruction after system call */
     user_context->pc += 4;
-}
-
-void handle_syscall_read(context_t *user_context) {
-    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
-    uint8_t *buffer  = (uint8_t *) user_context->cpu_regs[MIPS_REGISTER_A2];
-    int length  = user_context->cpu_regs[MIPS_REGISTER_A3];
-
-    if (fhandle == FILEHANDLE_STDIN) {
-        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
-        gcd_t *gcd = (gcd_t *) dev->generic_device;
-        int len = gcd->read(gcd, buffer, length);
-        // buffer[len] = '\0';
-        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
-    } else {
-        // error; reading from other files unimplemented
-        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
-    }
-}
-
-void handle_syscall_write(context_t *user_context) {
-    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
-    uint8_t *buffer  = (uint8_t *) user_context->cpu_regs[MIPS_REGISTER_A2];
-    uint32_t length  = user_context->cpu_regs[MIPS_REGISTER_A3];
-
-    if (fhandle == FILEHANDLE_STDOUT) {
-        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
-        gcd_t *gcd = (gcd_t *) dev->generic_device;
-        int len = gcd->write(gcd, buffer, (int) length);
-        // null terminate, TODO: avoid overflow
-        //buffer[len] = '\0';
-        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
-    } else {
-        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
-    }
 }
