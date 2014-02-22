@@ -71,7 +71,7 @@ typedef struct {
     pagetable_t *pagetable;
 
     /* PID. Currently not used for anything, but might be useful
-       if process table is implemented. */
+       if process table is implemented. - now put to good use ;) */
     process_id_t process_id;
     /* pointer to the next thread in list (<0 = end of list) */
     TID_t next; 

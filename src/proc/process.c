@@ -1,4 +1,4 @@
-/*
+ /*
  * Process startup.
  *
  * Copyright (C) 2003-2005 Juha Aatrokoski, Timo Lilja,
@@ -50,7 +50,7 @@
  * This module contains facilities for managing userland process.
  */
 
-process_control_block_t process_table[PROCESS_MAX_PROCESSES];
+process_control_block_t * process_table[PROCESS_MAX_PROCESSES];
 
 /**
  * Starts one userland process. The thread calling this function will
@@ -64,8 +64,12 @@ process_control_block_t process_table[PROCESS_MAX_PROCESSES];
  * @executable The name of the executable to be run in the userland
  * process
  */
-void process_start(const char *executable)
+void process_start(process_id_t process_id)
 {
+    process_control_block_t * pcb = process_get_process_entry(process_id);
+    
+    kprintf("Starting program '%s' with pid %i..\n", pcb->executable, pcb->process_id);
+    
     thread_table_t *my_entry;
     pagetable_t *pagetable;
     uint32_t phys_page;
@@ -92,7 +96,7 @@ void process_start(const char *executable)
     my_entry->pagetable = pagetable;
     _interrupt_set_state(intr_status);
 
-    file = vfs_open((char *)executable);
+    file = vfs_open(pcb->executable);
     /* Make sure the file existed and was a valid ELF file */
     KERNEL_ASSERT(file >= 0);
     KERNEL_ASSERT(elf_parse_header(&elf, file));
@@ -100,6 +104,7 @@ void process_start(const char *executable)
     /* Trivial and naive sanity check for entry point: */
     KERNEL_ASSERT(elf.entry_point >= PAGE_SIZE);
 
+    
     /* Calculate the number of pages needed by the whole process
        (including userland stack). Since we don't have proper tlb
        handling code, all these pages must fit into TLB. */
@@ -165,8 +170,7 @@ void process_start(const char *executable)
         KERNEL_ASSERT(vfs_read(file, (void *)elf.rw_vaddr, elf.rw_size)
 		      == (int)elf.rw_size);
     }
-
-
+    
     /* Set the dirty bit to zero (read-only) on read-only pages. */
     for(i = 0; i < (int)elf.ro_pages; i++) {
         vm_set_dirty(my_entry->pagetable, elf.ro_vaddr + i*PAGE_SIZE, 0);
@@ -182,6 +186,8 @@ void process_start(const char *executable)
     memoryset(&user_context, 0, sizeof(user_context));
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
+    
+    pcb->user_context = &user_context;
 
     thread_goto_userland(&user_context);
 
@@ -189,27 +195,40 @@ void process_start(const char *executable)
 }
 
 void process_init() {
-  KERNEL_PANIC("Not implemented.");
+    // zero out the process table
+    // memoryset(&process_table, 0, sizeof(process_table));
+    for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i)
+        process_table[i] = NULL;
 }
 
 process_id_t process_spawn(const char *executable) {
-  executable = executable;
-  KERNEL_PANIC("Not implemented.");
-  return 0; /* Dummy */
+    
+    process_control_block_t pcb;
+    pcb.executable = (char *)executable;
+    pcb.process_id = process_get_available_pid();
+    pcb.parent_id = process_get_current_process();
+    pcb.state = PROCESS_NEW;
+    
+    process_table[pcb.process_id] = &pcb;
+    
+    TID_t thread = thread_create(&process_start, (uint32_t)pcb.executable);
+   
+    thread_run(thread); 
+    
+    return 0; /* Dummy */
 }
 
 /* Stop the process and the thread it runs in. Sets the return value as well */
 void process_finish(int retval) {
-  retval=retval;
-  KERNEL_PANIC("Not implemented.");
+    retval=retval;
+    KERNEL_PANIC("Not implemented.");
 }
 
 int process_join(process_id_t pid) {
-  pid=pid;
-  KERNEL_PANIC("Not implemented.");
-  return 0; /* Dummy */
+    pid=pid;
+    KERNEL_PANIC("Not implemented.");
+    return 0; /* Dummy */
 }
-
 
 process_id_t process_get_current_process(void)
 {
@@ -218,12 +237,20 @@ process_id_t process_get_current_process(void)
 
 process_control_block_t *process_get_current_process_entry(void)
 {
-    return &process_table[process_get_current_process()];
+    return process_table[process_get_current_process()];
 }
 
 process_control_block_t *process_get_process_entry(process_id_t pid) {
-    return &process_table[pid];
+    return process_table[pid];
 }
 
+process_id_t process_get_available_pid() {
+    for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
+        process_control_block_t * pcb = process_table[i];
+        if (!pcb || pcb->state == PROCESS_DEAD) return i;
+    }
+    
+    return -1; // or kernel panic ?
+}
 
 /** @} */

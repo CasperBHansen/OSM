@@ -37,9 +37,9 @@
 #ifndef BUENOS_PROC_PROCESS
 #define BUENOS_PROC_PROCESS
 
-typedef int process_id_t;
+#include "kernel/cswitch.h"
 
-void process_start(const char *executable);
+typedef int process_id_t;
 
 #define USERLAND_STACK_TOP 0x7fffeffc
 
@@ -50,6 +50,8 @@ void process_start(const char *executable);
 
 /* Enumeration type of process states. */
 typedef enum {
+    PROCESS_NEW,
+    PROCESS_WAITING,
     PROCESS_RUNNING,
     PROCESS_ZOMBIE,
     PROCESS_DEAD
@@ -60,9 +62,26 @@ typedef struct {
     /* name of executable */
     char *executable;
 
+    // process id, used for table look-up
+    process_id_t parent_id;
+    process_id_t process_id;
+    
+    // user context (cpu registers)
+    context_t * user_context;
+
     /* process state */
     process_state_t state;
+    
+    // accounting information
+    struct {
+        uint64_t cpu;
+        uint64_t user;
+    } usage;
+
 } process_control_block_t;
+
+
+void process_start(process_id_t process_id);
 
 /* Initialize the process table.  This must be called during kernel
    startup before any other process-related calls. */
@@ -84,5 +103,11 @@ process_id_t process_get_current_process(void);
 
 /* Return PCB of current process. */
 process_control_block_t *process_get_current_process_entry(void);
+
+/* Return PCB with the pid */
+process_control_block_t *process_get_process_entry(process_id_t pid);
+
+/* Return an available pid. */
+process_id_t process_get_available_pid();
 
 #endif

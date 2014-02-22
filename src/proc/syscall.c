@@ -35,6 +35,7 @@
  */
 #include "kernel/cswitch.h"
 #include "proc/syscall.h"
+#include "proc/process.h"
 #include "kernel/halt.h"
 #include "kernel/panic.h"
 #include "lib/libc.h"
@@ -42,6 +43,13 @@
 #include "drivers/device.h"
 #include "drivers/gcd.h"
 
+/**
+ * Handle SYSCALL_EXEC syscall.
+ */
+void handle_syscall_exec(context_t * user_context) {
+    const char * executable = (const char *)user_context->cpu_regs[MIPS_REGISTER_A1];
+    user_context->cpu_regs[MIPS_REGISTER_V0] = process_spawn(executable);
+}
 
 /**
  * Handle SYSCALL_READ syscall.
@@ -105,6 +113,9 @@ void syscall_handle(context_t *user_context)
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
     case SYSCALL_EXIT:
         halt_kernel();
+        break;
+    case SYSCALL_EXEC:
+        handle_syscall_exec(user_context);
         break;
     case SYSCALL_HALT:
         halt_kernel();
