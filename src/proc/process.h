@@ -48,9 +48,20 @@ void process_start(const char *executable);
 
 #define PROCESS_MAX_PROCESSES 32
 
+/* Enumeration type of process states. */
+typedef enum {
+    PROCESS_RUNNING,
+    PROCESS_ZOMBIE,
+    PROCESS_DEAD
+} process_state_t;
+
+/* Process control block data structure. */
 typedef struct {
-  /* STUB: Put something here. */
-  int dummy; /* Remove this. */
+    /* name of executable */
+    char *executable;
+
+    /* process state */
+    process_state_t state;
 } process_control_block_t;
 
 /* Initialize the process table.  This must be called during kernel
