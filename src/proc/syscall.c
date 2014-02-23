@@ -52,6 +52,16 @@ void handle_syscall_exec(context_t * user_context) {
 }
 
 /**
+ * Handle SYSCALL_EXIT syscall.
+ */
+void handle_syscall_exit(context_t * user_context) {
+    const int retval = (const int) user_context->cpu_regs[MIPS_REGISTER_A1];
+    process_finish(retval);
+    user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
+    kprintf("syscall_exit handled...\n");
+}
+
+/**
  * Handle SYSCALL_READ syscall.
  */
 void handle_syscall_read(context_t *user_context) {
@@ -111,11 +121,11 @@ void syscall_handle(context_t *user_context)
      * restored from user_context.
      */
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
-    case SYSCALL_EXIT:
-        halt_kernel();
-        break;
     case SYSCALL_EXEC:
         handle_syscall_exec(user_context);
+        break;
+    case SYSCALL_EXIT:
+        handle_syscall_exit(user_context);
         break;
     case SYSCALL_HALT:
         halt_kernel();
