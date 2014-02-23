@@ -1,12 +1,13 @@
 #include "tests/lib.h"
+#include "lib/libc.h"
 
 int main(void)
 {
-    syscall_exec("[arkimedes]readwrite");
-    
-    int i;
-    for (i = 0; i < 10000; ++i) {
-    }
+    int subp_pid = syscall_exec("[arkimedes]subprocess");
+
+    int subp_retval = syscall_join(subp_pid);
+
+    subp_retval = subp_retval;
 
     return 0;
 }

@@ -1,9 +1,9 @@
 #!/bin/sh
 
-OSM_DIR="/home/casperbhansen/Development/OSM"
+OSM_DIR="/home/akh/git/OSM"
 SRC_DIR="$OSM_DIR/src"
 TEST_DIR="$OSM_DIR/src/tests"
-FYAMS_DIR="$OSM_DIR/fyams/bin"
+FYAMS_DIR="/home/akh/osm/bin"
 
 if [[ $PATH != *$FYAMS_DIR* ]]
 then

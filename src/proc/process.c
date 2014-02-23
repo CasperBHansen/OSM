@@ -40,6 +40,7 @@
 #include "kernel/assert.h"
 #include "kernel/interrupt.h"
 #include "kernel/config.h"
+#include "kernel/sleepq.h"
 #include "fs/vfs.h"
 #include "drivers/yams.h"
 #include "vm/vm.h"
@@ -49,6 +50,8 @@
  *
  * This module contains facilities for managing userland process.
  */
+/** Spinlock which must be held when manipulating the process table */
+spinlock_t process_table_slock;
 
 process_control_block_t process_table[PROCESS_MAX_PROCESSES];
 
@@ -189,7 +192,7 @@ void process_start(uint32_t process_id)
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
     
-    pcb->user_context = &user_context;
+    //pcb->user_context = &user_context;
 
     thread_goto_userland(&user_context);
 
@@ -217,7 +220,7 @@ process_id_t process_spawn(const char *executable) {
     else {
         TID_t thread_id = thread_create(&process_start, (uint32_t)pcb->process_id);
         process_table[pcb->process_id].thread_id = thread_id;
-        thread_set_thread_pid(thread_id, pcb->process_id);
+        //thread_set_thread_pid(thread_id, pcb->process_id);
         thread_run(thread_id);
     }
     
@@ -228,22 +231,52 @@ process_id_t process_spawn(const char *executable) {
 void process_finish(int retval) {
     thread_table_t *thr = thread_get_current_thread_entry();
 
+    _interrupt_disable();
+
+    spinlock_acquire(&process_table_slock);
+
     // set return value and make zombie
-    process_control_block_t *proc = process_get_current_process_entry();
-    proc->retval = retval;
-    proc->state = PROCESS_ZOMBIE;
+    process_control_block_t *pcb = process_get_current_process_entry();
+    kprintf("executable: %s, pid: %d, state: %d", pcb->executable, pcb->process_id, pcb->state);
+    pcb->retval = retval;
+    pcb->state = PROCESS_ZOMBIE;
+    kprintf("sleepq wake pid: %d\n", process_get_current_process());
+    process_id_t pid = process_get_current_process();
+    sleepq_wake(&pid);
+
+    spinlock_release(&process_table_slock);
+
+    _interrupt_enable();
+    _interrupt_generate_sw0();
 
     // clean up virtual memory
     vm_destroy_pagetable(thr->pagetable);
     thr->pagetable = NULL;
 
     thread_finish();
+    //thread_set_thread_pid(thread_get_current_thread_entry(), proc->parent_id);
+    //kprintf("process_finish called, retval: %d\n", retval);
 }
 
 int process_join(process_id_t pid) {
-    pid=pid;
-    KERNEL_PANIC("Not implemented.");
-    return 0; /* Dummy */
+    interrupt_status_t intr_status;
+
+    if (process_table[pid].state == PROCESS_DEAD)
+        return -1;
+    if (process_table[pid].state == PROCESS_ZOMBIE) {
+        process_table[pid].state = PROCESS_DEAD;
+        return process_table[pid].retval;
+    }
+    // disable interrupts and add to sleepq waiting for child pid resource
+    intr_status = _interrupt_disable();
+    kprintf("sleepq add pid: %d\n", pid);
+    sleepq_add(&pid);
+    thread_switch();
+    _interrupt_set_state(intr_status);
+
+
+    process_table[pid].state = PROCESS_DEAD;
+    return process_table[pid].retval;
 }
 
 process_control_block_t * process_create_process(const char * executable)
