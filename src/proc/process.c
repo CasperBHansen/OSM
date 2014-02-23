@@ -224,8 +224,19 @@ process_id_t process_spawn(const char *executable) {
 
 /* Stop the process and the thread it runs in. Sets the return value as well */
 void process_finish(int retval) {
-    retval=retval;
-    KERNEL_PANIC("Not implemented.");
+    /*thread_table_t *thr = thread_get_current_thread_entry();
+
+    // set return value and make zombie
+    process_control_block_t *proc = process_get_current_process_entry();
+    proc->retval = retval;
+    proc->state = PROCESS_ZOMBIE;
+
+    // clean up virtual memory
+    vm_destroy_pagetable(thr->pagetable);
+    thr->pagetable = NULL;
+
+    thread_finish();*/
+    retval = retval;
 }
 
 int process_join(process_id_t pid) {

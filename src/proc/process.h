@@ -72,6 +72,9 @@ typedef struct {
 
     /* process state */
     process_state_t state;
+
+    // return value
+    int retval;
     
     // accounting information
     struct {
