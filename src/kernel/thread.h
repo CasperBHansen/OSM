@@ -95,6 +95,7 @@ void thread_goto_userland(context_t *usercontext);
 
 void thread_finish(void);
 
+void thread_set_thread_pid(TID_t thread_id, process_id_t process_id);
 
 #define USERLAND_ENABLE_BIT 0x00000010
 

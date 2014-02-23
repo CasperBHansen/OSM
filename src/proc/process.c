@@ -96,8 +96,9 @@ void process_start(uint32_t process_id)
     intr_status = _interrupt_disable();
     my_entry->pagetable = pagetable;
     _interrupt_set_state(intr_status);
-
+    
     file = vfs_open(pcb->executable);
+    kprintf("file return: %i\n", file);
     /* Make sure the file existed and was a valid ELF file */
     KERNEL_ASSERT(file >= 0);
     KERNEL_ASSERT(elf_parse_header(&elf, file));
@@ -196,28 +197,29 @@ void process_start(uint32_t process_id)
 }
 
 void process_init() {
-    // zero out the process table
-/*
-    memoryset(&process_table, 0, sizeof(process_table));
+    // initialize processes
     for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i)
         process_table[i].state = PROCESS_DEAD;
-*/
 }
 
 process_id_t process_spawn(const char *executable) {
     
     process_control_block_t * pcb = process_create_process(executable);
     
-    kprintf("\nWOOHOO\n\n");
+    kprintf("Spawning process '%s' with pid %i\n", pcb->executable, pcb->process_id);
     
+    // inefficient, should be handled only on startup
     if (pcb->process_id == PROCESS_STARTUP_PID) {
+        pcb->parent_id = -1;
+        pcb->thread_id = thread_get_current_thread();
         process_start(pcb->process_id);
     }
     else {
-        TID_t thread_id = thread_create(&process_start, (uint32_t)pcb->executable);
+        TID_t thread_id = thread_create(&process_start, (uint32_t)pcb->process_id);
+        process_table[pcb->process_id].thread_id = thread_id;
+        thread_set_thread_pid(thread_id, pcb->process_id);
         thread_run(thread_id);
     }
-    
     
     return pcb->process_id;
 }
@@ -237,10 +239,10 @@ int process_join(process_id_t pid) {
 process_control_block_t * process_create_process(const char * executable)
 {
     process_id_t pid = process_get_available_pid();
+    process_table[pid].process_id = pid;
     process_table[pid].parent_id = process_get_current_process();
-    
-    kprintf("%s\n", executable);
-    stringcopy(process_table[pid].executable, executable, strlen(executable));
+    process_table[pid].state = PROCESS_NEW;
+    stringcopy(process_table[pid].executable, executable, PROCESS_NAME_LENGTH);
     
     return &process_table[pid];
 }
@@ -260,9 +262,9 @@ process_control_block_t *process_get_process_entry(process_id_t pid) {
 }
 
 process_id_t process_get_available_pid() {
-    for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
-        process_control_block_t * pcb = &process_table[i];
-        if (!pcb || pcb->state == PROCESS_DEAD) return i;
+    for (process_id_t pid = 0; pid < PROCESS_MAX_PROCESSES; ++pid) {
+        process_control_block_t * pcb = process_get_process_entry(pid);
+        if (pcb->state == PROCESS_DEAD) return pid;
     }
     
     return -1; // or kernel panic ?

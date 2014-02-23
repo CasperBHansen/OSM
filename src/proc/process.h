@@ -49,6 +49,8 @@ typedef int process_id_t;
 #define PROCESS_MAX_PROCESSES 32
 #define PROCESS_STARTUP_PID 0
 
+#define PROCESS_NAME_LENGTH 128
+
 /* Enumeration type of process states. */
 typedef enum {
     PROCESS_NEW,
@@ -61,11 +63,14 @@ typedef enum {
 /* Process control block data structure. */
 typedef struct {
     /* name of executable */
-    char *executable;
+    char executable[PROCESS_NAME_LENGTH];
 
     // process id, used for table look-up
     process_id_t parent_id;
     process_id_t process_id;
+    
+    // thread id
+    int thread_id;
     
     // user context (cpu registers)
     context_t * user_context;

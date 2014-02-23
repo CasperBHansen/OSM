@@ -122,12 +122,13 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
 {
     static TID_t next_tid = 0;
     TID_t i, tid = -1;
-
+    
     interrupt_status_t intr_status;
       
     intr_status = _interrupt_disable();
 
     spinlock_acquire(&thread_table_slock);
+    
     
     /* Find the first free thread table entry starting from 'next_tid' */
     for (i=0; i<CONFIG_MAX_THREADS; i++) {
@@ -198,7 +199,7 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
     /* enable interrupts for this new thread */
     thread_table[tid].context->status = 
         INTERRUPT_MASK_ALL | INTERRUPT_MASK_MASTER;
-
+    
     return tid;
 }
 
@@ -320,6 +321,11 @@ void thread_finish(void)
 
     /* not possible without a stack? alternative in assembler? */
     KERNEL_PANIC("thread_finish(): thread was not destroyed");
+}
+
+void thread_set_thread_pid(TID_t thread_id, process_id_t process_id)
+{
+    thread_table[thread_id].process_id = process_id;
 }
 
 /** @} */
