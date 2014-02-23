@@ -220,7 +220,7 @@ process_id_t process_spawn(const char *executable) {
     else {
         TID_t thread_id = thread_create(&process_start, (uint32_t)pcb->process_id);
         process_table[pcb->process_id].thread_id = thread_id;
-        //thread_set_thread_pid(thread_id, pcb->process_id);
+        thread_set_thread_pid(thread_id, pcb->process_id);
         thread_run(thread_id);
     }
     
@@ -270,11 +270,12 @@ int process_join(process_id_t pid) {
     // disable interrupts and add to sleepq waiting for child pid resource
     intr_status = _interrupt_disable();
     kprintf("sleepq add pid: %d\n", pid);
-    sleepq_add(&pid);
+    //sleepq_add(&pid);
     thread_switch();
     _interrupt_set_state(intr_status);
 
-
+    kprintf("sleepq pid wake up: %d\n", pid);
+    
     process_table[pid].state = PROCESS_DEAD;
     return process_table[pid].retval;
 }
