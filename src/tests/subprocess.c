@@ -1,7 +1,7 @@
 /*
- * readwrite.c
+ * subprocess.c
  * 
- * A test program of read and write.
+ * A test program of subprocesses.
  */
 
 #include "proc/syscall.h"
@@ -14,6 +14,8 @@ int main() {
       
     const char * hello_str = "Hello read/write!";
     syscall_write(FILEHANDLE_STDOUT, hello_str, sizeof(const char) * 18);
+    
+    syscall_halt();
   
     return 1;
 }

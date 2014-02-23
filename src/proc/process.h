@@ -90,7 +90,7 @@ typedef struct {
 } process_control_block_t;
 
 
-void process_start(uint32_t process_id);
+void process_start(uint32_t pid);
 
 /* Initialize the process table.  This must be called during kernel
    startup before any other process-related calls. */
@@ -107,7 +107,7 @@ void process_finish(int retval);
  * Only works on child processes */
 int process_join(process_id_t pid);
 
-process_control_block_t * process_create_process(const char * executable);
+process_id_t process_create_process(const char * executable);
 
 /* Return PID of current process. */
 process_id_t process_get_current_process(void);

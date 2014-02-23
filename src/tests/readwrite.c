@@ -24,7 +24,7 @@ int main() {
     }
                             
     syscall_write(FILEHANDLE_STDOUT, buf, sizeof(char) * BUFFER_SIZE);
-  
-    return 0;
+    
+    return 90;
 }
                                         

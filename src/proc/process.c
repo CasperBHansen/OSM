@@ -67,12 +67,8 @@ process_control_block_t process_table[PROCESS_MAX_PROCESSES];
  * @executable The name of the executable to be run in the userland
  * process
  */
-void process_start(uint32_t process_id)
+void process_start(uint32_t pid)
 {
-    process_control_block_t * pcb = process_get_process_entry(process_id);
-    
-    kprintf("Starting process '%s' with pid %i..\n", pcb->executable, pcb->process_id);
-    
     thread_table_t *my_entry;
     pagetable_t *pagetable;
     uint32_t phys_page;
@@ -86,7 +82,7 @@ void process_start(uint32_t process_id)
     interrupt_status_t intr_status;
 
     my_entry = thread_get_current_thread_entry();
-    
+    my_entry->process_id = pid;
     
     /* If the pagetable of this thread is not NULL, we are trying to
        run a userland process for a second time in the same thread.
@@ -100,8 +96,7 @@ void process_start(uint32_t process_id)
     my_entry->pagetable = pagetable;
     _interrupt_set_state(intr_status);
     
-    file = vfs_open(pcb->executable);
-    kprintf("file return: %i\n", file);
+    file = vfs_open(process_table[pid].executable);
     /* Make sure the file existed and was a valid ELF file */
     KERNEL_ASSERT(file >= 0);
     KERNEL_ASSERT(elf_parse_header(&elf, file));
@@ -191,8 +186,6 @@ void process_start(uint32_t process_id)
     memoryset(&user_context, 0, sizeof(user_context));
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
-    
-    //pcb->user_context = &user_context;
 
     thread_goto_userland(&user_context);
 
@@ -200,6 +193,7 @@ void process_start(uint32_t process_id)
 }
 
 void process_init() {
+    spinlock_reset(&process_table_slock);
     // initialize processes
     for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i)
         process_table[i].state = PROCESS_DEAD;
@@ -207,88 +201,102 @@ void process_init() {
 
 process_id_t process_spawn(const char *executable) {
     
-    process_control_block_t * pcb = process_create_process(executable);
-    
-    kprintf("Spawning process '%s' with pid %i\n", pcb->executable, pcb->process_id);
+    interrupt_status_t intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+ 
+    process_id_t pid = process_create_process(executable);
     
     // inefficient, should be handled only on startup
-    if (pcb->process_id == PROCESS_STARTUP_PID) {
-        pcb->parent_id = -1;
-        pcb->thread_id = thread_get_current_thread();
-        process_start(pcb->process_id);
-    }
-    else {
-        TID_t thread_id = thread_create(&process_start, (uint32_t)pcb->process_id);
-        process_table[pcb->process_id].thread_id = thread_id;
-        thread_set_thread_pid(thread_id, pcb->process_id);
-        thread_run(thread_id);
+    if (pid == PROCESS_STARTUP_PID) {
+        process_table[pid].parent_id = -1;
+        process_table[pid].thread_id = thread_get_current_thread();
+    
+        spinlock_release(&process_table_slock);
+        _interrupt_set_state(intr_status);
+        
+        process_start(process_table[pid].process_id);
     }
     
-    return pcb->process_id;
+    TID_t thread_id = thread_create(&process_start, pid);
+    process_table[pid].thread_id = thread_id;
+    
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+    
+    thread_run(thread_id);
+    
+    return pid;
 }
 
 /* Stop the process and the thread it runs in. Sets the return value as well */
 void process_finish(int retval) {
+    interrupt_status_t intr_status;
     thread_table_t *thr = thread_get_current_thread_entry();
-
-    _interrupt_disable();
-
-    spinlock_acquire(&process_table_slock);
-
-    // set return value and make zombie
-    process_control_block_t *pcb = process_get_current_process_entry();
-    kprintf("executable: %s, pid: %d, state: %d", pcb->executable, pcb->process_id, pcb->state);
-    pcb->retval = retval;
-    pcb->state = PROCESS_ZOMBIE;
-    kprintf("sleepq wake pid: %d\n", process_get_current_process());
     process_id_t pid = process_get_current_process();
-    sleepq_wake(&pid);
-
+    
+    int i;
+    for (i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
+        intr_status = _interrupt_disable();
+        spinlock_acquire(&process_table_slock);
+        if (process_table[i].parent_id == pid && process_table[i].state != PROCESS_DEAD) {
+            process_table[i].parent_id = -1;
+        }
+        spinlock_release(&process_table_slock);
+        _interrupt_set_state(intr_status);
+    }
+    
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+    
+    process_table[pid].retval = retval;
+    process_table[pid].state = PROCESS_DEAD;
+    
+    sleepq_wake( (void *)process_table[pid].executable );
+    
     spinlock_release(&process_table_slock);
-
-    _interrupt_enable();
-    _interrupt_generate_sw0();
-
+    _interrupt_set_state(intr_status);
+    
     // clean up virtual memory
     vm_destroy_pagetable(thr->pagetable);
     thr->pagetable = NULL;
 
     thread_finish();
-    //thread_set_thread_pid(thread_get_current_thread_entry(), proc->parent_id);
-    //kprintf("process_finish called, retval: %d\n", retval);
 }
 
 int process_join(process_id_t pid) {
     interrupt_status_t intr_status;
+    int ret;
 
     if (process_table[pid].state == PROCESS_DEAD)
         return -1;
-    if (process_table[pid].state == PROCESS_ZOMBIE) {
-        process_table[pid].state = PROCESS_DEAD;
-        return process_table[pid].retval;
-    }
+    
     // disable interrupts and add to sleepq waiting for child pid resource
     intr_status = _interrupt_disable();
-    kprintf("sleepq add pid: %d\n", pid);
-    //sleepq_add(&pid);
-    thread_switch();
-    _interrupt_set_state(intr_status);
-
-    kprintf("sleepq pid wake up: %d\n", pid);
+    spinlock_acquire(&process_table_slock);
+    while (process_table[pid].state != PROCESS_ZOMBIE) {
+        sleepq_add( (void *)process_table[pid].executable );
+        spinlock_release(&process_table_slock);
+        thread_switch();
+        spinlock_acquire(&process_table_slock);
+    }
     
+    ret = process_table[pid].retval;
     process_table[pid].state = PROCESS_DEAD;
-    return process_table[pid].retval;
+    
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+    
+    return ret;
 }
 
-process_control_block_t * process_create_process(const char * executable)
-{
+process_id_t process_create_process(const char * executable)
+{  
     process_id_t pid = process_get_available_pid();
     process_table[pid].process_id = pid;
     process_table[pid].parent_id = process_get_current_process();
     process_table[pid].state = PROCESS_NEW;
     stringcopy(process_table[pid].executable, executable, PROCESS_NAME_LENGTH);
-    
-    return &process_table[pid];
+    return pid;
 }
 
 process_id_t process_get_current_process(void)
@@ -306,11 +314,8 @@ process_control_block_t *process_get_process_entry(process_id_t pid) {
 }
 
 process_id_t process_get_available_pid() {
-    for (process_id_t pid = 0; pid < PROCESS_MAX_PROCESSES; ++pid) {
-        process_control_block_t * pcb = process_get_process_entry(pid);
-        if (pcb->state == PROCESS_DEAD) return pid;
-    }
-    
+    for (process_id_t pid = 0; pid < PROCESS_MAX_PROCESSES; ++pid)
+        if (process_table[pid].state == PROCESS_DEAD) return pid;
     return -1; // or kernel panic ?
 }
 
