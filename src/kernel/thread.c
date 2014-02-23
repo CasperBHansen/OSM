@@ -123,7 +123,6 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
     static TID_t next_tid = 0;
     TID_t i, tid = -1;
 
-
     interrupt_status_t intr_status;
       
     intr_status = _interrupt_disable();

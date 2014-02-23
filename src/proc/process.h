@@ -47,6 +47,7 @@ typedef int process_id_t;
 #define PROCESS_ILLEGAL_JOIN -2
 
 #define PROCESS_MAX_PROCESSES 32
+#define PROCESS_STARTUP_PID 0
 
 /* Enumeration type of process states. */
 typedef enum {
@@ -81,7 +82,7 @@ typedef struct {
 } process_control_block_t;
 
 
-void process_start(process_id_t process_id);
+void process_start(uint32_t process_id);
 
 /* Initialize the process table.  This must be called during kernel
    startup before any other process-related calls. */
@@ -97,6 +98,8 @@ void process_finish(int retval);
  * will also mark its process table entry as free.
  * Only works on child processes */
 int process_join(process_id_t pid);
+
+process_control_block_t * process_create_process(const char * executable);
 
 /* Return PID of current process. */
 process_id_t process_get_current_process(void);

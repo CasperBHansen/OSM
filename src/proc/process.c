@@ -50,7 +50,7 @@
  * This module contains facilities for managing userland process.
  */
 
-process_control_block_t * process_table[PROCESS_MAX_PROCESSES];
+process_control_block_t process_table[PROCESS_MAX_PROCESSES];
 
 /**
  * Starts one userland process. The thread calling this function will
@@ -64,11 +64,11 @@ process_control_block_t * process_table[PROCESS_MAX_PROCESSES];
  * @executable The name of the executable to be run in the userland
  * process
  */
-void process_start(process_id_t process_id)
+void process_start(uint32_t process_id)
 {
     process_control_block_t * pcb = process_get_process_entry(process_id);
     
-    kprintf("Starting program '%s' with pid %i..\n", pcb->executable, pcb->process_id);
+    kprintf("Starting process '%s' with pid %i..\n", pcb->executable, pcb->process_id);
     
     thread_table_t *my_entry;
     pagetable_t *pagetable;
@@ -83,7 +83,8 @@ void process_start(process_id_t process_id)
     interrupt_status_t intr_status;
 
     my_entry = thread_get_current_thread_entry();
-
+    
+    
     /* If the pagetable of this thread is not NULL, we are trying to
        run a userland process for a second time in the same thread.
        This is not possible. */
@@ -196,26 +197,29 @@ void process_start(process_id_t process_id)
 
 void process_init() {
     // zero out the process table
-    // memoryset(&process_table, 0, sizeof(process_table));
+/*
+    memoryset(&process_table, 0, sizeof(process_table));
     for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i)
-        process_table[i] = NULL;
+        process_table[i].state = PROCESS_DEAD;
+*/
 }
 
 process_id_t process_spawn(const char *executable) {
     
-    process_control_block_t pcb;
-    pcb.executable = (char *)executable;
-    pcb.process_id = process_get_available_pid();
-    pcb.parent_id = process_get_current_process();
-    pcb.state = PROCESS_NEW;
+    process_control_block_t * pcb = process_create_process(executable);
     
-    process_table[pcb.process_id] = &pcb;
+    kprintf("\nWOOHOO\n\n");
     
-    TID_t thread = thread_create(&process_start, (uint32_t)pcb.executable);
-   
-    thread_run(thread); 
+    if (pcb->process_id == PROCESS_STARTUP_PID) {
+        process_start(pcb->process_id);
+    }
+    else {
+        TID_t thread_id = thread_create(&process_start, (uint32_t)pcb->executable);
+        thread_run(thread_id);
+    }
     
-    return 0; /* Dummy */
+    
+    return pcb->process_id;
 }
 
 /* Stop the process and the thread it runs in. Sets the return value as well */
@@ -230,6 +234,17 @@ int process_join(process_id_t pid) {
     return 0; /* Dummy */
 }
 
+process_control_block_t * process_create_process(const char * executable)
+{
+    process_id_t pid = process_get_available_pid();
+    process_table[pid].parent_id = process_get_current_process();
+    
+    kprintf("%s\n", executable);
+    stringcopy(process_table[pid].executable, executable, strlen(executable));
+    
+    return &process_table[pid];
+}
+
 process_id_t process_get_current_process(void)
 {
     return thread_get_current_thread_entry()->process_id;
@@ -237,16 +252,16 @@ process_id_t process_get_current_process(void)
 
 process_control_block_t *process_get_current_process_entry(void)
 {
-    return process_table[process_get_current_process()];
+    return &process_table[process_get_current_process()];
 }
 
 process_control_block_t *process_get_process_entry(process_id_t pid) {
-    return process_table[pid];
+    return &process_table[pid];
 }
 
 process_id_t process_get_available_pid() {
     for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
-        process_control_block_t * pcb = process_table[i];
+        process_control_block_t * pcb = &process_table[i];
         if (!pcb || pcb->state == PROCESS_DEAD) return i;
     }
     
