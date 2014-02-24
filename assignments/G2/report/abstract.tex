@@ -1,4 +1,10 @@
 \noindent In this assignment we've been tasked with implementing user processes. We'll
 make some design decisions about certain behaviour concerning user processes, 
 creating the necessary data structures and at last implement the user process
-using said data structures and make it behave within the specified parameters.
+using said data structures and make it behave within the specified parameters.\\
+\noindent The implemented functionality are support for starting and finishing 
+user processes; process join, where a process calls and potentially waits for a 
+return value of another process. The following system calls were also
+implemented:\\\code{int syscall\_exec(char const*)},\\
+              \code{void syscall\_exit(int)},\\
+              \code{int syscall\_join(int)}.
