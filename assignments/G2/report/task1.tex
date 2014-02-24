@@ -60,7 +60,9 @@ the process need to {\it wait} for something to happen, for instance if it
 
 \newpage
 \subsection{Functions}
-...
+Now that we have our data structures in place, we can put them to use by
+discussing the necessary functions that we will be using to manage our
+processes.
 
 \subsubsection{Initializing processes}
 We chose a rather simple way to initialize the userland process system;
@@ -158,14 +160,40 @@ When a process returns, it calls \code{syscall\_exit} implicitly, which is
 handled by \code{handle\_syscall\_exit} \figref{code:handle_syscall_exit},
 which turn calls \code{process\_finish}.
 
+Inside this function we would like to ensure that killing this process doesn't
+affect other processes that may be related to it somehow. One relation is that
+of sub-processes, or children. So, on lines 8--15 we look through the process
+table, and if any process in the table has a parent reference to the process
+we are about to kill, we remove it by setting its \code{parent\_id} to -1.
+
+We then set the return-value of the process on line 20, as supplied via the
+function argument from \code{handle\_syscall\_exit} and set its state to dead
+on line 21.
+
 \begin{figure}[H]
     \lstinputlisting{code/process_finish.cpp}
     \caption{Code excerpt showing \code{process\_finish}.}
     \label{code:process_finish}
 \end{figure}
 
+Note that some preparation is made for virtual memory on lines 27--28, which
+must be done before finally calling \code{thread\_finish} on line 32, which
+kills the thread on which the process was running.
+
 \subsubsection{Joining processes}
-...
+In joining processes the current process must sit and wait for a child process
+to finish up, the process id of which has been supplied as an argument to the
+function via \code{handle\_syscall\_join} \figref{code:handle_syscall_join}.
+
+The first thing we do is check whether or not the child process is alive or
+not on lines 5--6. If not, we return an error, otherwise we proceed.
+
+We put the current process in a waiting state and enter a loop in which we
+put the process to sleep and continue running on another thread. We do this
+until the child process becomes a zombie, which signals that it has finished
+its work \figref{code:process_finish}. Once out of this loop we can save the
+child process return-value, set the child process state to being dead and
+reset the current process state to being running.
 
 \begin{figure}[H]
     \lstinputlisting{code/process_join.cpp}

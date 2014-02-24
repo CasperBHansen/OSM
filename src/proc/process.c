@@ -264,8 +264,6 @@ void process_finish(int retval) {
     vm_destroy_pagetable(thr->pagetable);
     thr->pagetable = NULL;
     
-    kprintf("Finishing pid %i..\n", pid);
-    
     thread_finish();
 }
 
