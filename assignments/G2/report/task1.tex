@@ -1,8 +1,97 @@
 %
 % task1.tex
 %
-% Description of task 1.
+% Types and functions for userland processes in Buenos.
 %
 
-\section{Task 1}
+\section{Types and functions}
 ...
+
+\subsection{Types}
+...
+\begin{figure}[H]
+    \lstinputlisting{code/process_control_block_t.cpp}
+    \label{code:process_control_block_t}
+    \caption{Code excerpt showing \code{process\_control\_block\_t}.}
+\end{figure}
+
+\subsection{Process states}
+Throughout the lifecycle of a process it can take on one of several states.
+At the time of creation \figref{code:process_create_process} its state is set
+as being {\it new}, meaning that the process has simply been created. Once the
+process is started \figref{code:process_start} its state will is changed to
+reflect this by setting it to be {\it running}.
+\begin{figure}[H]
+    \lstinputlisting{code/process_state_t.cpp}
+    \label{code:process_state_t}
+    \caption{Code excerpt showing \code{process\_state\_t}.}
+\end{figure}
+
+\newpage
+\subsection{Functions}
+...
+
+\subsubsection{Initializing processes}
+We chose a rather simple way to initialize the userland process system;
+firstly, we reset the associated spinlock (\code{process\_table\_slock}) on
+line 2. Inside the spinlock acquisition on line 4 and the following release
+of it on line 10, we loop through the process table, setting each process to
+a state of being dead.
+
+\begin{figure}[H]
+    \lstinputlisting{code/process_init.cpp}
+    \label{code:process_init}
+    \caption{Code excerpt showing \code{process\_init}.}
+\end{figure}
+
+Having done this, we have a condition for which available process id's can be
+retrieved. That is, once dead a process can be relieved of its id
+\figref{code:process_get_available_pid}, which is discussed later.
+
+\subsubsection{Spawning processes}
+The procedure required to spawn a process involves; {\it creating} a process
+\figref{code:process_create_process} as can be seen on line 6, creating a
+{\it thread} with which to {\it run} the process. In our case, because of time
+constraints, we ended up using what was intended as a temporary solution by
+which the initial program can be treated as a process as well. The way we went
+about doing this is highly inefficient, as we check to see if the process id
+created is equal to the start-up process id (which is asserted to be 0,
+reasoned by the fact that it is the first process to be initiated). If this is
+the case, then we wish to continue executing the process from the current
+thread, by calling \code{process\_start} directly. If this is not the case,
+then the process must be run from a separate thread, which is created on line
+19, and associated with the process on the following line. Running the thread
+is delegated on to the threading system by calling \code{thread\_run}.
+\begin{figure}[H]
+    \lstinputlisting{code/process_spawn.cpp}
+    \caption{Code excerpt showing \code{process\_spawn}.}
+    \label{code:process_spawn}
+\end{figure}
+
+\subsubsection{Creating processes}
+We decided to encapsulate the creation of processes as a function of its own,
+for the simple reason of readability.
+\begin{figure}[H]
+    \lstinputlisting{code/process_create_process.cpp}
+    \caption{Code excerpt showing \code{process\_create\_process}.}
+    \label{code:process_create_process}
+\end{figure}
+...
+\begin{figure}[H]
+    \lstinputlisting{code/process_get_available_pid.cpp}
+    \caption{Code excerpt showing \code{process\_get\_available\_pid}.}
+    \label{code:process_get_available_pid}
+\end{figure}
+
+\subsubsection{Starting processes}
+...
+\begin{figure}[H]
+    % todo: fix line numbers
+    \lstinputlisting{code/process_start_p0.cpp}
+    \vspace{-0.25in}\center{\dots}
+    \lstinputlisting{code/process_start_p1.cpp}
+    \vspace{-0.25in}\center{\dots}
+    \lstinputlisting{code/process_start_p2.cpp}
+    \caption{Code excerpt showing \code{process\_start}.}
+    \label{code:process_start}
+\end{figure}
