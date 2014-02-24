@@ -58,6 +58,7 @@ void handle_syscall_exit(context_t * user_context) {
     const int retval = (const int) user_context->cpu_regs[MIPS_REGISTER_A1];
     user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
     process_id_t pid = process_get_current_process();
+    kprintf("Exiting pid %i..\n", pid);
     pid ? process_finish(retval) : halt_kernel();
 }
 
@@ -66,9 +67,7 @@ void handle_syscall_exit(context_t * user_context) {
  */
 void handle_syscall_join(context_t * user_context) {
     const uint32_t pid = (const int) user_context->cpu_regs[MIPS_REGISTER_A1];
-    int ret = process_join(pid);
-    kprintf("joined return value: \n");
-    user_context->cpu_regs[MIPS_REGISTER_V0] = ret;
+    user_context->cpu_regs[MIPS_REGISTER_V0] = process_join(pid);
 }
 
 /**

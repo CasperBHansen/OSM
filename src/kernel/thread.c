@@ -315,7 +315,7 @@ void thread_finish(void)
     spinlock_acquire(&thread_table_slock);
     thread_table[my_tid].state = THREAD_DYING;
     spinlock_release(&thread_table_slock);
-
+    
     _interrupt_enable();
     _interrupt_generate_sw0();
 

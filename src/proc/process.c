@@ -186,7 +186,8 @@ void process_start(uint32_t pid)
     memoryset(&user_context, 0, sizeof(user_context));
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
-
+    
+    process_table[pid].state = PROCESS_RUNNING;
     thread_goto_userland(&user_context);
 
     KERNEL_PANIC("thread_goto_userland failed.");
@@ -194,9 +195,14 @@ void process_start(uint32_t pid)
 
 void process_init() {
     spinlock_reset(&process_table_slock);
+    
+    spinlock_acquire(&process_table_slock);
+    
     // initialize processes
     for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i)
         process_table[i].state = PROCESS_DEAD;
+    
+    spinlock_release(&process_table_slock);
 }
 
 process_id_t process_spawn(const char *executable) {
@@ -214,7 +220,7 @@ process_id_t process_spawn(const char *executable) {
         spinlock_release(&process_table_slock);
         _interrupt_set_state(intr_status);
         
-        process_start(process_table[pid].process_id);
+        process_start(pid); // never returns, start-up process
     }
     
     TID_t thread_id = thread_create(&process_start, pid);
@@ -235,12 +241,12 @@ void process_finish(int retval) {
     process_id_t pid = process_get_current_process();
     
     int i;
+    // remove parent references in other processes
     for (i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
         intr_status = _interrupt_disable();
         spinlock_acquire(&process_table_slock);
-        if (process_table[i].parent_id == pid && process_table[i].state != PROCESS_DEAD) {
+        if (process_table[i].parent_id == pid)
             process_table[i].parent_id = -1;
-        }
         spinlock_release(&process_table_slock);
         _interrupt_set_state(intr_status);
     }
@@ -251,15 +257,15 @@ void process_finish(int retval) {
     process_table[pid].retval = retval;
     process_table[pid].state = PROCESS_DEAD;
     
-    sleepq_wake( (void *)process_table[pid].executable );
-    
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
     
     // clean up virtual memory
     vm_destroy_pagetable(thr->pagetable);
     thr->pagetable = NULL;
-
+    
+    kprintf("Finishing pid %i..\n", pid);
+    
     thread_finish();
 }
 
@@ -270,9 +276,11 @@ int process_join(process_id_t pid) {
     if (process_table[pid].state == PROCESS_DEAD)
         return -1;
     
-    // disable interrupts and add to sleepq waiting for child pid resource
     intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
+    
+    // wait for the process to become a zombie
+    process_table[process_get_current_process()].state = PROCESS_WAITING;
     while (process_table[pid].state != PROCESS_ZOMBIE) {
         sleepq_add( (void *)process_table[pid].executable );
         spinlock_release(&process_table_slock);
@@ -282,6 +290,7 @@ int process_join(process_id_t pid) {
     
     ret = process_table[pid].retval;
     process_table[pid].state = PROCESS_DEAD;
+    process_table[process_get_current_process()].state = PROCESS_RUNNING;
     
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
@@ -292,7 +301,6 @@ int process_join(process_id_t pid) {
 process_id_t process_create_process(const char * executable)
 {  
     process_id_t pid = process_get_available_pid();
-    process_table[pid].process_id = pid;
     process_table[pid].parent_id = process_get_current_process();
     process_table[pid].state = PROCESS_NEW;
     stringcopy(process_table[pid].executable, executable, PROCESS_NAME_LENGTH);
@@ -314,9 +322,10 @@ process_control_block_t *process_get_process_entry(process_id_t pid) {
 }
 
 process_id_t process_get_available_pid() {
+    // check for available process id
     for (process_id_t pid = 0; pid < PROCESS_MAX_PROCESSES; ++pid)
         if (process_table[pid].state == PROCESS_DEAD) return pid;
-    return -1; // or kernel panic ?
+    return -1; // could also wait for one to become available?
 }
 
 /** @} */
