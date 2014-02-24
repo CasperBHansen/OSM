@@ -1,8 +1,52 @@
 %
 % task2.tex
 %
-% Description of task 2.
+% System calls for user-process control in Buenos.
 %
 
-\section{Task 2}
-...
+\section{System calls}
+Here, we will discuss the implementation of user-process control system calls.
+
+\subsection{Executing processes}
+When this call is made, we want to spawn a new process with the appropriate
+executable. As the executable is passed to this function by way of the user
+context, we can simply read out the argument from CPU register {\bf A1} as
+done on line 2. Then we pass it into a call to \code{process\_spawn}, the
+return-value of which we need to put back into CPU register {\bf V0}.
+
+\begin{figure}[H]
+    \lstinputlisting{code/handle_syscall_exec.cpp}
+    \caption{Code excerpt showing \code{handle\_syscall\_exec}.}
+    \label{code:handle_syscall_exec}
+\end{figure}
+
+
+\subsection{Exiting processes}
+When a process returns (e.g. \code{return 0}) it will be handled by this
+function. The return-value of the process lies in the passed user context,
+which we retrieve from register {\bf A1} on line 2. We pass this on to the
+{\bf V0} register, and then get the process id by which we determine whether
+or not to simply finish the process by calling \code{process\_finish} or halt
+the system entirely. If the process is the start-up process, then we should
+halt, if not simply finish the process.
+
+\begin{figure}[H]
+    \lstinputlisting{code/handle_syscall_exit.cpp}
+    \caption{Code excerpt showing \code{handle\_syscall\_exit}.}
+    \label{code:handle_syscall_exit}
+\end{figure}
+
+
+\subsection{Joining processes}
+When this call is made, we want to pass the process id, which lies in CPU
+register {\bf A1}, on to the \code{process\_join} function that does the
+actual work here. This is done on line 2. The return-value of
+\code{process\_join} must be put back into CPU register {\bf V0}, which is
+done on line 3, along with the actual call.
+
+\begin{figure}[H]
+    \lstinputlisting{code/handle_syscall_join.cpp}
+    \caption{Code excerpt showing \code{handle\_syscall\_join}.}
+    \label{code:handle_syscall_join}
+\end{figure}
+

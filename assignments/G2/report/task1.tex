@@ -154,7 +154,9 @@ numerous thing (most of which was already implemented in the original), which
 allows us to run the process. Hence, we set its state as such on line 120.
 
 \subsubsection{Finishing processes}
-...
+When a process returns, it calls \code{syscall\_exit} implicitly, which is
+handled by \code{handle\_syscall\_exit} \figref{code:handle_syscall_exit},
+which turn calls \code{process\_finish}.
 
 \begin{figure}[H]
     \lstinputlisting{code/process_finish.cpp}
