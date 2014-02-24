@@ -76,7 +76,15 @@
 \newpage
 
 \include{task1}
-\include{task2}
+\input{task2.tex}
+
+\section{Comments}
+After performing an exec syscall and returning from the program running on that
+subprocess, the thread is successfully ended and the return value given to the
+\verb|process_finish| function in \file{process/process.c}. After ending the
+thread, the execution of the program that called the \verb|syscall_exec| syscall
+is not resumed, for unknown reasons, and hence the system hangs. This can be
+seen e.g. when executing the test program \file{tests/process.c}.
+
 
 \end{document}
-
