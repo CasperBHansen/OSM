@@ -207,7 +207,7 @@ reset the current process state to being running.
 \subsection{Handling orphaned subprocesses} % TODO
 In the current implementaion, any children of a process to be finished have
 their parent id member, of the process control block structure, set to -1,
-indication that the process no longer has a parent. This creates the problem
+indicating that the process no longer has a parent. This creates the problem
 that orphaned children that finishes will remain zombies until \textsf{buenos} 
 terminates since no parent will call \verb|syscall_join| to kill the child and
 obtain its return value. This means that the \verb|process_get_available_pid()|
