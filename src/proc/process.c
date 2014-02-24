@@ -220,7 +220,7 @@ process_id_t process_spawn(const char *executable) {
         spinlock_release(&process_table_slock);
         _interrupt_set_state(intr_status);
         
-        process_start(pid); // never returns, start-up process
+        process_start(pid); // never returns, start-up process*/
     }
     
     TID_t thread_id = thread_create(&process_start, pid);
@@ -239,37 +239,35 @@ void process_finish(int retval) {
     interrupt_status_t intr_status;
     thread_table_t *thr = thread_get_current_thread_entry();
     process_id_t pid = process_get_current_process();
-    
+
+    kprintf("\n\nReturn value from process with pid: %d is %d\n", pid, retval); // TODO
+
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
     int i;
     // remove parent references in other processes
     for (i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
-        intr_status = _interrupt_disable();
-        spinlock_acquire(&process_table_slock);
         if (process_table[i].parent_id == pid)
             process_table[i].parent_id = -1;
-        spinlock_release(&process_table_slock);
-        _interrupt_set_state(intr_status);
     }
-    
-    intr_status = _interrupt_disable();
-    spinlock_acquire(&process_table_slock);
-    
+
     process_table[pid].retval = retval;
     process_table[pid].state = PROCESS_ZOMBIE;
-    
+
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
-    
+
     // clean up virtual memory
     vm_destroy_pagetable(thr->pagetable);
     thr->pagetable = NULL;
-    
+
     thread_finish();
 }
 
 int process_join(process_id_t pid) {
     interrupt_status_t intr_status;
     int ret;
+    process_id_t current_pid = process_get_current_process();
 
     if (pid < 0 || process_table[pid].state == PROCESS_DEAD)
         return -1;
@@ -278,9 +276,10 @@ int process_join(process_id_t pid) {
     spinlock_acquire(&process_table_slock);
     
     // wait for the process to become a zombie
-    process_table[process_get_current_process()].state = PROCESS_WAITING;
+    //process_table[process_get_current_process()].state = PROCESS_WAITING;
+    process_table[current_pid].state = PROCESS_WAITING;
     while (process_table[pid].state != PROCESS_ZOMBIE) {
-        sleepq_add( (void *)process_table[pid].executable );
+        sleepq_add((void *) process_table[pid].executable);
         spinlock_release(&process_table_slock);
         thread_switch();
         spinlock_acquire(&process_table_slock);
@@ -288,7 +287,7 @@ int process_join(process_id_t pid) {
     
     ret = process_table[pid].retval;
     process_table[pid].state = PROCESS_DEAD;
-    process_table[process_get_current_process()].state = PROCESS_RUNNING;
+    process_table[current_pid].state = PROCESS_RUNNING;
     
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
