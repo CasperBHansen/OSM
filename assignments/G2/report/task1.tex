@@ -25,7 +25,8 @@ required throughout the implementation.
 \end{figure}
 
 Inside the \code{process\_control\_block\_t}, we have a string which will hold
-the associated executable on line 2, the length of which is fixed, such that
+the associated executable on line 2, the length of which is fixed (defined to
+128 in the corresponding header file \file{process.h}), such that
 process names cannot exceed this upper bound. On line 3 we have state
 variable, which is discussed in detail under
 {\ref{sec:types|sub:process-states}. Processes can spawn sub-processes, we
@@ -158,7 +159,7 @@ allows us to run the process. Hence, we set its state as such on line 120.
 \subsubsection{Finishing processes}
 When a process returns, it calls \code{syscall\_exit} implicitly, which is
 handled by \code{handle\_syscall\_exit} \figref{code:handle_syscall_exit},
-which turn calls \code{process\_finish}.
+which in turn calls \code{process\_finish}.
 
 Inside this function we would like to ensure that killing this process doesn't
 affect other processes that may be related to it somehow. One relation is that
@@ -166,7 +167,7 @@ of sub-processes, or children. So, on lines 8--15 we look through the process
 table, and if any process in the table has a parent reference to the process
 we are about to kill, we remove it by setting its \code{parent\_id} to -1.
 
-We then set the return-value of the process on line 20, as supplied via the
+We then set the return value of the process on line 20, as supplied via the
 function argument from \code{handle\_syscall\_exit} and set its state to
 zombie on line 21, which allows the parent process to kill it
 \figref{code:process_join}.
@@ -193,7 +194,7 @@ We put the current process in a waiting state and enter a loop in which we
 put the process to sleep and continue running on another thread. We do this
 until the child process becomes a zombie, which signals that it has finished
 its work \figref{code:process_finish}. Once out of this loop we can save the
-child process return-value, set the child process state to being dead and
+child process return value, set the child process state to being dead and
 reset the current process state to being running.
 
 \begin{figure}[H]
@@ -201,3 +202,18 @@ reset the current process state to being running.
     \caption{Code excerpt showing \code{process\_join}.}
     \label{code:process_join}
 \end{figure}
+
+\subsection{Handling orphaned subprocesses} % TODO
+In the current implementaion, any children of a process to be finished have
+their parent id member, of the process control block structure, set to -1,
+indication that the process no longer has a parent. This creates the problem
+that orphaned children that finishes will remain zombies until \textsf{buenos} 
+terminates since no parent will call \verb|syscall_join| to kill the child and
+obtain its return value. This means that the \verb|process_get_available_pid()|
+function will return the invalid pid -1 when 32 process have been started
+and not killed. This obviously creates some trouble and therefore orphaned
+subprocesses should preferably be handled in some well-defined way. One way to
+do this is to set the parent id of the orphaned children to the process id of
+the initial system process and making this process perform the process joins at
+regular intervals, possibly just killing the orphan and discarding its return
+value. Another method would be to simply kill any orphaned child.
