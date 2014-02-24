@@ -167,8 +167,9 @@ table, and if any process in the table has a parent reference to the process
 we are about to kill, we remove it by setting its \code{parent\_id} to -1.
 
 We then set the return-value of the process on line 20, as supplied via the
-function argument from \code{handle\_syscall\_exit} and set its state to dead
-on line 21.
+function argument from \code{handle\_syscall\_exit} and set its state to
+zombie on line 21, which allows the parent process to kill it
+\figref{code:process_join}.
 
 \begin{figure}[H]
     \lstinputlisting{code/process_finish.cpp}

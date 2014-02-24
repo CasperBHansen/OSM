@@ -18,7 +18,7 @@ void process_finish(int retval) {
     spinlock_acquire(&process_table_slock);
     
     process_table[pid].retval = retval;
-    process_table[pid].state = PROCESS_DEAD;
+    process_table[pid].state = PROCESS_ZOMBIE;
     
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
