@@ -7,11 +7,11 @@
 \section{Types and functions}
 Here, we will discuss the implementation of userland processes in Buenos, by
 first examining the code which went into describing processes and how we
-manange them in the kernel.
+manage them in the kernel.
 
 \subsection{Types}
 Before we can implement any functions we must declare a data structure with
-which we can keep track of individual processes properties, also called a
+which we can keep track of individual processes' properties, also called a
 {\it process control block}. Ours is declared in the code excerpt below.
 
 We will describe the internals of it in short here, but their existence is
@@ -28,7 +28,7 @@ Inside the \code{process\_control\_block\_t}, we have a string which will hold
 the associated executable on line 2, the length of which is fixed (defined to
 128 in the corresponding header file \file{process.h}), such that
 process names cannot exceed this upper bound. On line 3 we have state
-variable, which is discussed in detail under
+variable, which is discussed in detail in section 
 {\ref{sec:types|sub:process-states}. Processes can spawn sub-processes, we
 argue that such relationships require keeping track thereof, which is the
 \code{parent\_id}'s intended use. Processes are associated with a thread, each
@@ -43,12 +43,13 @@ spend executing the process.
 
 \subsection{Process states}
 \label{sec:types|sub:process-states}
-Throughout the lifecycle of a process it can take on one of several states.
-At the time of creation \figref{code:process_create_process} its state is set
-as being {\it new}, meaning that the process has simply been created. Once the
-process is started \figref{code:process_start} its state will is changed to
-reflect this by setting it to be {\it running}. Once the process finishes its
-state is set as being {\it dead}, which allows its process id to be reused
+Throughout the lifecycle of a process it can take on several states but only
+ever one at any given time. At the time of creation
+\figref{code:process_create_process} its state is set as being {\it new},
+meaning that the process has simply been created. Once the process is started
+\figref{code:process_start} its state will be changed to reflect this by setting
+it to be {\it running}. Once the process finishes its state is set as being {\it
+dead}, which allows its process id to be reused
 \figref{code:process_get_available_pid}.
 \begin{figure}[H]
     \lstinputlisting{code/process_state_t.cpp}
