@@ -5,17 +5,43 @@
 %
 
 \section{Types and functions}
-...
+Here, we will discuss the implementation of userland processes in Buenos, by
+first examining the code which went into describing processes and how we
+manange them in the kernel.
 
 \subsection{Types}
-...
+Before we can implement any functions we must declare a data structure with
+which we can keep track of individual processes properties, also called a
+{\it process control block}. Ours is declared in the code excerpt below.
+
+We will describe the internals of it in short here, but their existence is
+reasoned elsewhere, as it makes more sense to justify each one when they are
+required throughout the implementation.
+
 \begin{figure}[H]
     \lstinputlisting{code/process_control_block_t.cpp}
     \label{code:process_control_block_t}
     \caption{Code excerpt showing \code{process\_control\_block\_t}.}
 \end{figure}
 
+Inside the \code{process\_control\_block\_t}, we have a string which will hold
+the associated executable on line 2, the length of which is fixed, such that
+process names cannot exceed this upper bound. On line 3 we have state
+variable, which is discussed in detail under
+{\ref{sec:types|sub:process-states}. Processes can spawn sub-processes, we
+argue that such relationships require keeping track thereof, which is the
+\code{parent\_id}'s intended use. Processes are associated with a thread, each
+process should keep the associated thread id, and so it is with
+\code{thread\_id}. The \code{retval} variable will contain the exit-code of a
+process. That is, the value returned by the program itself (e.g. \code{return
+0}).
+
+Note that the \code{usage} structure remains unused in our implementation, but
+is included for later implementation. Its purpose is to keep track of the time
+spend executing the process.
+
 \subsection{Process states}
+\label{sec:types|sub:process-states}
 Throughout the lifecycle of a process it can take on one of several states.
 At the time of creation \figref{code:process_create_process} its state is set
 as being {\it new}, meaning that the process has simply been created. Once the
@@ -76,22 +102,48 @@ for the simple reason of readability.
     \caption{Code excerpt showing \code{process\_create\_process}.}
     \label{code:process_create_process}
 \end{figure}
-...
+
+\subsubsection{Acquiring available PID's}
+To acquire an available process id, in our implementation, we need to look
+through the process table. If we encounter a process which is dead, then that
+process no longer needs any of its data and can be relieved of its process id.
 \begin{figure}[H]
     \lstinputlisting{code/process_get_available_pid.cpp}
     \caption{Code excerpt showing \code{process\_get\_available\_pid}.}
     \label{code:process_get_available_pid}
 \end{figure}
+Should it happen that our process table is at its maximum we had some
+difficulty deciding what to do. As it stands we simply return -1, which is not
+a valid array index, and could cause the system to fail. Among the
+alternatives discussed in the group were kernel panic or waiting for a process
+id to become available.
+
+% TODO: TEST IF MORE THAN 32 PROCESSES EXISTS, WHAT HAPPENS? IS syscall_exec
+%       SIMPLY GIVING BACK AN ERROR-CODE, OR DOES THE ENTIRE SYSTEM CRASH ?
 
 \subsubsection{Starting processes}
-...
+Most of the implementation for starting processes was already in place. We
+did, however, need to make some slight adjustments in order to accommodate
+userland processes.
+
+The original implementation of \code{process\_start} took a \code{const char
+*} as its argument, which was used to pass the executable filename. We
+modified the function to take a process id instead. Doing so, we recognize the
+need of associating a process with an executable, hence reasoning the
+declaration of such in the process control block structure
+\figref{code:process_control_block_t}. In the code excerpt one can see that we
+now reference the executable associated with that process on line 29. The
+thread table is updated to make the process run on lines 15--16.
+
 \begin{figure}[H]
-    % todo: fix line numbers
     \lstinputlisting{code/process_start_p0.cpp}
     \vspace{-0.25in}\center{\dots}
-    \lstinputlisting{code/process_start_p1.cpp}
+    \lstinputlisting[firstnumber=29]{code/process_start_p1.cpp}
     \vspace{-0.25in}\center{\dots}
-    \lstinputlisting{code/process_start_p2.cpp}
+    \lstinputlisting[firstnumber=120]{code/process_start_p2.cpp}
     \caption{Code excerpt showing \code{process\_start}.}
     \label{code:process_start}
 \end{figure}
+At the very end of the \code{process\_start} function we have verified
+numerous thing (most of which was already implemented in the original), which
+allows us to run the process. Hence, we set its state as such on line 120.
