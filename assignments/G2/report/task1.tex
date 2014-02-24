@@ -46,12 +46,17 @@ Throughout the lifecycle of a process it can take on one of several states.
 At the time of creation \figref{code:process_create_process} its state is set
 as being {\it new}, meaning that the process has simply been created. Once the
 process is started \figref{code:process_start} its state will is changed to
-reflect this by setting it to be {\it running}.
+reflect this by setting it to be {\it running}. Once the process finishes its
+state is set as being {\it dead}, which allows its process id to be reused
+\figref{code:process_get_available_pid}.
 \begin{figure}[H]
     \lstinputlisting{code/process_state_t.cpp}
     \label{code:process_state_t}
     \caption{Code excerpt showing \code{process\_state\_t}.}
 \end{figure}
+The remainder of the states are used while the process is still alive. Should
+the process need to {\it wait} for something to happen, for instance if it
+\code{syscall\_join} \figref{code:process_join}, then it is set as such.
 
 \newpage
 \subsection{Functions}
@@ -147,3 +152,21 @@ thread table is updated to make the process run on lines 15--16.
 At the very end of the \code{process\_start} function we have verified
 numerous thing (most of which was already implemented in the original), which
 allows us to run the process. Hence, we set its state as such on line 120.
+
+\subsubsection{Finishing processes}
+...
+
+\begin{figure}[H]
+    \lstinputlisting{code/process_finish.cpp}
+    \caption{Code excerpt showing \code{process\_finish}.}
+    \label{code:process_finish}
+\end{figure}
+
+\subsubsection{Joining processes}
+...
+
+\begin{figure}[H]
+    \lstinputlisting{code/process_join.cpp}
+    \caption{Code excerpt showing \code{process\_join}.}
+    \label{code:process_join}
+\end{figure}
