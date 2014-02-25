@@ -254,6 +254,8 @@ void process_finish(int retval) {
     process_table[pid].retval = retval;
     process_table[pid].state = PROCESS_ZOMBIE;
 
+    sleepq_wake((void *) process_table[pid].executable);
+
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
 
