@@ -22,6 +22,9 @@ void stack_init(stack_t *stack);
 /* Returns true (not 0) if the stack is empty. */
 int stack_empty(stack_t *stack);
 
+/* Destroy the stack: free the memory and destroy the mutex lock. */
+void stack_destroy(stack_t *stack);
+
 /* Return the top element of the stack.
  * Returns NULL if the stack is empty. */
 void *stack_top(stack_t *stack);

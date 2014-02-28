@@ -23,7 +23,7 @@ int main() {
     if (stack_empty(stack))
         printf("Stack is empty!\n");
 
-    free(stack); // clean up
+    stack_destroy(stack); // clean up
 
     return 0;
 }
