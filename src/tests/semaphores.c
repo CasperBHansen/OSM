@@ -10,7 +10,7 @@ const char str[] = "Hello Semaphores!\n";
 
 int main() {
     
-    syscall_write(FILEHANDLE_STDOUT, str, sizeof(str));
+    syscall_write(stdout, str, sizeof(str));
     
     return 0;
 }

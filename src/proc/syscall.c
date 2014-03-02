@@ -113,6 +113,7 @@ void handle_syscall_write(context_t *user_context) {
  * Handle SYSCALL_SEM_OPEN syscall.
  */
 void handle_syscall_sem_open(context_t * user_context) {
+    user_context = user_context;
     KERNEL_PANIC("handle_syscall_sem_open unimplemented!");
 }
 
@@ -120,6 +121,7 @@ void handle_syscall_sem_open(context_t * user_context) {
  * Handle SYSCALL_SEM_PROCURE syscall.
  */
 void handle_syscall_sem_procure(context_t * user_context) {
+    user_context = user_context;
     KERNEL_PANIC("handle_syscall_sem_procure unimplemented!");
 }
 
@@ -127,6 +129,7 @@ void handle_syscall_sem_procure(context_t * user_context) {
  * Handle SYSCALL_SEM_VACATE syscall.
  */
 void handle_syscall_sem_vacate(context_t * user_context) {
+    user_context = user_context;
     KERNEL_PANIC("handle_syscall_sem_vacate unimplemented!");
 }
 
