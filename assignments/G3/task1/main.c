@@ -25,5 +25,9 @@ int main() {
 
     stack_destroy(stack); // clean up
 
+    // free the stack memory
+    free(stack);
+    stack = NULL;
+
     return 0;
 }
