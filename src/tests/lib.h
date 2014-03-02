@@ -38,12 +38,15 @@
 #define BUENOS_USERLAND_LIB_H
 
 #include "lib/types.h"
-#include "proc/syscall.h"
 
 /* Filehandles for input and output */
 #define stdin 0
 #define stdout 1
 #define stderr 2
+
+// defined as void for now - the assignment text is THE LAW!
+// figure out if this is correct (I don't think so, it must contain name and value).
+typedef void usr_sem_t;
 
 /* Makes the syscall 'syscall_num' with the arguments 'a1', 'a2' and 'a3'. */
 uint32_t _syscall(uint32_t syscall_num, uint32_t a1, uint32_t a2, uint32_t a3);
@@ -68,5 +71,9 @@ int syscall_delete(const char *filename);
 int syscall_fork(void (*func)(int), int arg);
 void *syscall_memlimit(void *heap_end);
 
+usr_sem_t * syscall_sem_open(const char * name, int value);
+int syscall_sem_p(usr_sem_t * handle);
+int syscall_sem_v(usr_sem_t * handle);
+int syscall_sem_destroy(usr_sem_t * handle);
 
 #endif /* BUENOS_USERLAND_LIB_H */

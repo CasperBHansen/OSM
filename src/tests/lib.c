@@ -40,7 +40,7 @@
  */
 
 #include "tests/lib.h"
-
+#include "proc/syscall.h"
 
 /* Halt the system (sync disks and power off). This function will
  * never return. 
@@ -181,4 +181,33 @@ int syscall_create(const char *filename, int size)
 int syscall_delete(const char *filename)
 {
     return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename, 0, 0);
+}
+
+/* Returns a handle to a userland semaphore identified by the string specified
+ * name. If the argument value is zero or positive, a fresh semaphore of the
+ * given name will be created with value. On the other hand, if a semaphore
+ * with that name already exists, NULL is returned to indicate an error. If
+ * value is negative syscall_sem_open returns an existing semaphore with that
+ * name. If no such semaphore exists, NULL is returned.
+ */
+usr_sem_t * syscall_sem_open(const char * name, int value)
+{
+    return (usr_sem_t *)_syscall(SYSCALL_SEM_OPEN, (uint32_t)name, (uint32_t)value, 0);
+}
+
+int syscall_sem_p(usr_sem_t * handle)
+{
+    return (int)_syscall(SYSCALL_SEM_PROCURE, (uint32_t)handle, 0, 0);
+}
+
+int syscall_sem_v(usr_sem_t * handle)
+{
+    return (int)_syscall(SYSCALL_SEM_VACATE, (uint32_t)handle, 0, 0);
+}
+
+int syscall_sem_destroy(usr_sem_t * handle)
+{
+    // hmm, no syscall handle for this ..
+    handle = handle;
+    return 0;
 }
