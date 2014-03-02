@@ -1,16 +1,15 @@
 CC=gcc
 CFLAGS=-Wall -Werror
+PROG=main
 
-all: main
+build:
+	$(CC) $(CFLAGS) $(PROG).c stack.c -o program
 
-stack.o: stack.h stack.c
-	$(CC) $(CFLAGS) -c stack.c
+example:
+	$(CC) $(CFLAGS) examples/$(PROG).c stack.c -o program
 
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c
-
-main: stack.o main.o
-	$(CC) $(CFLAGS) -o main	stack.o main.o
+run:
+	./program
 
 clean:
-	rm main *.o
+	rm program *.o
