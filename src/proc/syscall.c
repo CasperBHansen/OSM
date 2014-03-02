@@ -58,7 +58,6 @@ void handle_syscall_exit(context_t * user_context) {
     const int retval = (const int) user_context->cpu_regs[MIPS_REGISTER_A1];
     user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
     process_id_t pid = process_get_current_process();
-    kprintf("Exiting pid %i..\n", pid);
     (pid == PROCESS_STARTUP_PID) ? halt_kernel() : process_finish(retval);
 }
 
@@ -110,6 +109,26 @@ void handle_syscall_write(context_t *user_context) {
     }
 }
 
+/*
+ * Handle SYSCALL_SEM_OPEN syscall.
+ */
+void handle_syscall_sem_open(context_t * user_context) {
+    KERNEL_PANIC("handle_syscall_sem_open unimplemented!");
+}
+
+/*
+ * Handle SYSCALL_SEM_PROCURE syscall.
+ */
+void handle_syscall_sem_procure(context_t * user_context) {
+    KERNEL_PANIC("handle_syscall_sem_procure unimplemented!");
+}
+
+/*
+ * Handle SYSCALL_SEM_VACATE syscall.
+ */
+void handle_syscall_sem_vacate(context_t * user_context) {
+    KERNEL_PANIC("handle_syscall_sem_vacate unimplemented!");
+}
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -144,6 +163,15 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_READ:
         handle_syscall_read(user_context);
+        break;
+    case SYSCALL_SEM_OPEN:
+        handle_syscall_sem_open(user_context);
+        break;
+    case SYSCALL_SEM_PROCURE:
+        handle_syscall_sem_procure(user_context);
+        break;
+    case SYSCALL_SEM_VACATE:
+        handle_syscall_sem_vacate(user_context);
         break;
     case SYSCALL_WRITE:
         handle_syscall_write(user_context);
