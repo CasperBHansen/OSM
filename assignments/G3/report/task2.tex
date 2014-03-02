@@ -1,8 +1,30 @@
 %
 % task2.tex
 %
-% ...
+% Use kernel semaphores to implement userland semaphores.
 %
 
-\section{Task 2}
+\section{Userland semaphores}
 ...
+
+\subsection{Preliminary}
+We started out by adding the system call switch identifiers to
+\file{proc/syscall.h}, such that we can recognize these. The identifier values
+were specified by the assignment text.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=56,firstline=56,lastline=58]
+    {../../../src/proc/syscall.h}
+    \label{code:syscall-identifiers}
+    \caption{Code excerpt showing the added system call identifiers.}
+\end{figure}
+Having the identifiers in place we went on to add each of these to the cases
+of the system call handle switch.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=167,firstline=167,lastline=175]
+    {../../../src/proc/syscall.c}
+    \label{code:syscall-switch}
+    \caption{Code excerpt showing the added system call switch cases.}
+\end{figure}
+Note that at this time we put in place the corresponding functions, but their
+bodies were simply triggering a kernel panic. These will be revised later.
+
