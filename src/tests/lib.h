@@ -38,15 +38,12 @@
 #define BUENOS_USERLAND_LIB_H
 
 #include "lib/types.h"
+#include "proc/semaphore.h"
 
 /* Filehandles for input and output */
 #define stdin 0
 #define stdout 1
 #define stderr 2
-
-// defined as void for now - the assignment text is THE LAW!
-// figure out if this is correct (I don't think so, it must contain name and value).
-typedef void usr_sem_t;
 
 /* Makes the syscall 'syscall_num' with the arguments 'a1', 'a2' and 'a3'. */
 uint32_t _syscall(uint32_t syscall_num, uint32_t a1, uint32_t a2, uint32_t a3);

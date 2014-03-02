@@ -207,7 +207,5 @@ int syscall_sem_v(usr_sem_t * handle)
 
 int syscall_sem_destroy(usr_sem_t * handle)
 {
-    // hmm, no syscall handle for this ..
-    handle = handle;
-    return 0;
+    return (int)_syscall(SYSCALL_SEM_DESTROY, (uint32_t)handle, 0, 0);
 }

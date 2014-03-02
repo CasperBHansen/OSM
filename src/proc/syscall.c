@@ -34,6 +34,7 @@
  *
  */
 #include "kernel/cswitch.h"
+#include "kernel/semaphore.h"
 #include "proc/syscall.h"
 #include "proc/process.h"
 #include "kernel/halt.h"
@@ -42,6 +43,7 @@
 #include "kernel/assert.h"
 #include "drivers/device.h"
 #include "drivers/gcd.h"
+#include "proc/semaphore.h"
 
 /**
  * Handle SYSCALL_EXEC syscall.
@@ -110,27 +112,36 @@ void handle_syscall_write(context_t *user_context) {
 }
 
 /*
+ * Handle SYSCALL_SEM_DESTROY syscall.
+ */
+void handle_syscall_sem_destroy(context_t * user_context) {
+    usr_sem_t * sem = (usr_sem_t *)user_context->cpu_regs[MIPS_REGISTER_A1];
+    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_destroy(sem);
+}
+
+/*
  * Handle SYSCALL_SEM_OPEN syscall.
  */
 void handle_syscall_sem_open(context_t * user_context) {
-    user_context = user_context;
-    KERNEL_PANIC("handle_syscall_sem_open unimplemented!");
+    const char * name = (const char *)user_context->cpu_regs[MIPS_REGISTER_A1];
+    const int value = (const int)user_context->cpu_regs[MIPS_REGISTER_A2];
+    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_open(name, value);
 }
 
 /*
  * Handle SYSCALL_SEM_PROCURE syscall.
  */
 void handle_syscall_sem_procure(context_t * user_context) {
-    user_context = user_context;
-    KERNEL_PANIC("handle_syscall_sem_procure unimplemented!");
+    usr_sem_t * sem = (usr_sem_t *)user_context->cpu_regs[MIPS_REGISTER_A1];
+    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_procure(sem);
 }
 
 /*
  * Handle SYSCALL_SEM_VACATE syscall.
  */
 void handle_syscall_sem_vacate(context_t * user_context) {
-    user_context = user_context;
-    KERNEL_PANIC("handle_syscall_sem_vacate unimplemented!");
+    usr_sem_t * sem = (usr_sem_t *)user_context->cpu_regs[MIPS_REGISTER_A1];
+    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_vacate(sem);
 }
 
 /**
@@ -166,6 +177,9 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_READ:
         handle_syscall_read(user_context);
+        break;
+    case SYSCALL_SEM_DESTROY:
+        handle_syscall_sem_destroy(user_context);
         break;
     case SYSCALL_SEM_OPEN:
         handle_syscall_sem_open(user_context);
