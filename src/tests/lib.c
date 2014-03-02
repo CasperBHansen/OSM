@@ -39,7 +39,6 @@
  * your assignments) DO NOT CHANGE EXISTING SYSCALL FUNCTIONS!
  */
 
-#include "proc/syscall.h"
 #include "tests/lib.h"
 
 

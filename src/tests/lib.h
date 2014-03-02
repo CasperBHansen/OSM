@@ -38,6 +38,7 @@
 #define BUENOS_USERLAND_LIB_H
 
 #include "lib/types.h"
+#include "proc/syscall.h"
 
 /* Filehandles for input and output */
 #define stdin 0
