@@ -1,4 +1,4 @@
-build:
+all:
 	pdflatex report.tex
 
 clean:
