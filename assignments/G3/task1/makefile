@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-Wall -Werror
-PROG=main
+CFLAGS=-lpthread
+PROG=matmult
 
 all: $(PROG)
 
@@ -12,6 +12,13 @@ main.o: main.c
 
 main: stack.o main.o
 	$(CC) $(CFLAGS) -o main	stack.o main.o
+
+matmult.o: matmult.c
+	$(CC) $(CFLAGS) -c matmult.c
+
+matmult: matmult.o stack.o
+	$(CC) $(CFLAGS) -o matmult stack.o matmult.o
+
 
 # examples
 PThread_1_hello: PThread_1_hello.o
