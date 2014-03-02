@@ -1,7 +1,8 @@
 CC=gcc
 CFLAGS=-Wall -Werror
+PROG=main
 
-all: main
+all: $(PROG)
 
 stack.o: stack.h stack.c
 	$(CC) $(CFLAGS) -c stack.c
@@ -22,5 +23,10 @@ PThread_condvar: PThread_condvar.o
 PThread_matmult: PThread_matmult.o
 	$(CC) $(CFLAGS) -o PThread_matmult stack.o PThread_matmult.o
 
+run:
+	./$(PROG)
+
 clean:
 	rm main PThread_1_hello PThread_condvar PThread_matmult *.o
+
+.PHONY: clean run
