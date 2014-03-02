@@ -5,7 +5,8 @@
 %
 
 \section{Userland semaphores}
-...
+Using the already implemented kernel semaphores, we will extend the
+implementation to support userland semaphores.
 
 \subsection{Preliminary}
 We started out by adding the system call switch identifiers to
@@ -28,3 +29,30 @@ of the system call handle switch.
 Note that at this time we put in place the corresponding functions, but their
 bodies were simply triggering a kernel panic. These will be revised later.
 
+Now that we are able to receive such system calls, we went on to implement the
+userland library functions that will delegate the work on to these system
+call handlers. So we declared the \code{usr\_sem\_t} type in
+\file{tests/lib.h}, which serves to describe a userland semaphore.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=47,firstline=47,lastline=49]
+    {../../../src/tests/lib.h}
+    \label{code:usr_sem_t}
+    \caption{Code excerpt showing the \code{usr\_sem\_t} type declaration.}
+\end{figure}
+Further, we added the prototype semaphore functions in \file{tests/lib.h} for
+the userland library.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=74,firstline=74,lastline=77]
+    {../../../src/tests/lib.h}
+    \label{code:userland-library-prototypes}
+    \caption{Code excerpt showing the userland library prototype functions.}
+\end{figure}
+Lastly, for bridging the gap from the userland library in \file{tests/lib.h}
+to the actual system call handlers in \file{proc/syscall.h}, we implemented
+the userland library functions in \file{tests/lib.c}.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=193,firstline=193,lastline=213]
+    {../../../src/tests/lib.c}
+    \label{code:userland-library-implementation}
+    \caption{Code excerpt showing the userland library implementation.}
+\end{figure}
