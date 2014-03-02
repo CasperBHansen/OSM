@@ -20,7 +20,16 @@ void stack_init(stack_t *stack) {
     }
 }
 
-void stack_destroy(stack_t *stack) {    // TODO: lock and unlock mutex
+void stack_destroy(stack_t *stack) {
+    // lock mutex; if the mutex is already locked by another thread, the
+    // calling thread is blocked until the mutex is unlocked.
+    int lock_tmp = pthread_mutex_lock(&mutex);
+    if (lock_tmp != 0) {
+        printf("Error: Pthread mutex could not be locked, \
+                error number %d returned.\n", lock_tmp);
+        exit(EXIT_FAILURE);
+    }
+
     list_t *node = stack->top;
     list_t *tmp;
 
@@ -30,10 +39,15 @@ void stack_destroy(stack_t *stack) {    // TODO: lock and unlock mutex
         node = node->tail;
         free(tmp);
     }
-    
-    // free the stack memory
-    free(stack);
 
+    // unlock mutex
+    int unlock_tmp = pthread_mutex_unlock(&mutex);
+    if (unlock_tmp != 0) {
+        printf("Error: Pthread mutex could not be unlocked, \
+                error number %d returned.\n", unlock_tmp);
+        exit(EXIT_FAILURE); // this should not happen since a lock was acquired
+    }
+    
     // destroy the mutex lock
     int mutex_tmp = pthread_mutex_destroy(&mutex);
     if (mutex_tmp != 0) {
@@ -54,15 +68,32 @@ void *stack_top(stack_t *stack) {
     return stack->top->head;
 }
 
-void *stack_pop(stack_t *stack) {       // TODO: lock and unlock mutex
+void *stack_pop(stack_t *stack) {
     if (stack_empty(stack))
         return NULL;
+
+    // lock mutex; if the mutex is already locked by another thread, the
+    // calling thread is blocked until the mutex is unlocked.
+    int lock_tmp = pthread_mutex_lock(&mutex);
+    if (lock_tmp != 0) {
+        printf("Error: Pthread mutex could not be locked, \
+                error number %d returned.\n", lock_tmp);
+        exit(EXIT_FAILURE);
+    }
 
     void *ret = stack->top->head;
     list_t *tmp = stack->top;
     stack->top = stack->top->tail;
 
     free(tmp);
+
+    // unlock mutex
+    int unlock_tmp = pthread_mutex_unlock(&mutex);
+    if (unlock_tmp != 0) {
+        printf("Error: Pthread mutex could not be unlocked, \
+                error number %d returned.\n", unlock_tmp);
+        exit(EXIT_FAILURE); // this should not happen since a lock was acquired
+    }
 
     return ret;
 }
