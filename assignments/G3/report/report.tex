@@ -1,0 +1,81 @@
+\documentclass[11pt]{article}
+
+\usepackage{a4wide}             % save a few rain forests
+\usepackage{amsmath,amssymb}    % we can do maths 'n shit
+\usepackage{color}              % so purrty
+\usepackage{float}              % put things exactly where I tell you!
+\usepackage[utf8]{inputenc}     % i can has UTF-8
+\usepackage{listings}           % pretty-colored code excerpts
+\usepackage{multicol}           % such column.. very multi.. wow!
+
+\definecolor{comment}{rgb}      {0.38, 0.62, 0.38}
+\definecolor{keyword}{rgb}      {0.10, 0.10, 0.81}
+\definecolor{identifier}{rgb}   {0.00, 0.00, 0.00}
+\definecolor{string}{rgb}       {0.50, 0.50, 0.50}
+
+\newcommand{\code}[1]{{\tt #1}}
+\newcommand{\file}[1]{{\tt #1}}
+\newcommand{\imp}{\rightarrow}
+
+\newcommand{\figref}[1]{(see figure~\ref{#1})}
+
+\lstset
+{
+    language=C++,
+    % general settings
+    numbers=left,
+    frame=single,
+    basicstyle=\footnotesize\ttfamily,
+    tabsize=2,
+    breaklines=true,
+    % syntax highlighting
+    commentstyle=\color{comment},
+    keywordstyle=\color{keyword},
+    identifierstyle=\color{identifier},
+    stringstyle=\color{string},
+}
+
+\title
+{
+    {\Large Group Assignment 3} \\
+    Operating Systems and Multiprogramming
+}
+
+\author
+{
+    Anders Kiel Hovgaard \\
+    University of Copenhagen \\
+    Department of Computer Science \\
+    {\tt hzs554@alumni.ku.dk}
+    \and
+    Casper B. Hansen \\
+    University of Copenhagen \\
+    Department of Computer Science \\
+    {\tt fvx507@alumni.ku.dk}
+    \and
+    Rúni Klein Hansen \\
+    University of Copenhagen \\
+    Department of Computer Science \\
+    {\tt cdn768@alumni.ku.dk}
+}
+
+\date{last revision \today}
+
+\begin{document}
+
+\clearpage
+\maketitle
+\thispagestyle{empty}
+\begin{multicols}{2}
+    \begin{abstract}
+    \input{abstract}
+    \end{abstract}
+    \vfill\columnbreak
+    \tableofcontents\vfill
+\end{multicols}
+\newpage
+
+\include{task1}
+\include{task2}
+
+\end{document}
