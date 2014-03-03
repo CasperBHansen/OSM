@@ -13,36 +13,29 @@ We started out by adding the system call switch identifiers to
 \file{proc/syscall.h}, such that we can recognize these. The identifier values
 were specified by the assignment text.
 \begin{figure}[H]
-    \lstinputlisting[firstnumber=56,firstline=56,lastline=58]
+    \lstinputlisting[firstnumber=56,firstline=56,lastline=59]
     {../../../src/proc/syscall.h}
     \label{code:syscall-identifiers}
     \caption{Code excerpt showing the added system call identifiers.}
 \end{figure}
-Having the identifiers in place we went on to add each of these to the cases
-of the system call handle switch.
+Having the identifiers in place we went on to declare the \code{usr\_sem\_t}
+type \figref{code:semaphore.h}, which serves as a handle for userland
+semaphores and added each of these to the cases of the system call handle
+switch.
 \begin{figure}[H]
-    \lstinputlisting[firstnumber=167,firstline=167,lastline=175]
+    \lstinputlisting[firstnumber=181,firstline=181,lastline=192]
     {../../../src/proc/syscall.c}
     \label{code:syscall-switch}
     \caption{Code excerpt showing the added system call switch cases.}
 \end{figure}
-Note that at this time we put in place the corresponding functions, but their
-bodies were simply triggering a kernel panic. These will be revised later.
-
 Now that we are able to receive such system calls, we went on to implement the
 userland library functions that will delegate the work on to these system
-call handlers. So we declared the \code{usr\_sem\_t} type in
-\file{tests/lib.h}, which serves to describe a userland semaphore.
-\begin{figure}[H]
-    \lstinputlisting[firstnumber=47,firstline=47,lastline=49]
-    {../../../src/tests/lib.h}
-    \label{code:usr_sem_t}
-    \caption{Code excerpt showing the \code{usr\_sem\_t} type declaration.}
-\end{figure}
+call handlers. 
+
 Further, we added the prototype semaphore functions in \file{tests/lib.h} for
 the userland library.
 \begin{figure}[H]
-    \lstinputlisting[firstnumber=74,firstline=74,lastline=77]
+    \lstinputlisting[firstnumber=70,firstline=70,lastline=73]
     {../../../src/tests/lib.h}
     \label{code:userland-library-prototypes}
     \caption{Code excerpt showing the userland library prototype functions.}
@@ -56,3 +49,93 @@ the userland library functions in \file{tests/lib.c}.
     \label{code:userland-library-implementation}
     \caption{Code excerpt showing the userland library implementation.}
 \end{figure}
+In \file{proc/syscall.c} we then added \code{\#include "proc/semaphore.h"},
+such that we can use the functionality to be implemented by it, and went on to
+implement the functions called in the switch-statement
+(\figref{code:syscall-switch}).
+
+The \code{handle\_syscall\_sem\_open} function should extract the \code{name}
+and \code{value} arguments found in registers \code{A1} and \code{A2}, casting
+them to the appropriate types, \code{const char *} and \code{const int},
+respectively, as done on lines 126--127. These are passed on to the userland
+semaphore implementation (\code{semaphore\_userland\_open} in
+\file{proc/semaphore.h}), the result of which is put back into register
+\code{V0}, as done on line 128.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=125,firstline=125,lastline=129]
+    {../../../src/proc/syscall.c}
+    \label{code:handle_syscall_sem_open}
+    \caption{Code excerpt showing the \code{handle\_syscall\_sem\_open}
+    implementation.}
+\end{figure}
+For the remainder of the system call handlers, all take the same argument type
+and have the same return type. Therefore, we will omit tedious repetition and
+simply give an explanation of how they are all constructed.
+
+All of the following functions take as their argument a userland semaphore
+pointer (\code{usr\_sem\_t *}), so we extract this from register \code{A1},
+casting it to the appropriate type on the first line of the function body.
+Likewise, all of the following functions return an integer, so we call the
+corresponding function (from \file{proc/semaphore.h}) with the extracted
+argument, putting back the returned value into register \code{V0}.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=134,firstline=134,lastline=137]
+    {../../../src/proc/syscall.c}
+    \label{code:handle_syscall_sem_procure}
+    \caption{Code excerpt showing the \code{handle\_syscall\_sem\_procure}
+    implementation.}
+\end{figure}
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=142,firstline=142,lastline=145]
+    {../../../src/proc/syscall.c}
+    \label{code:handle_syscall_sem_vacate}
+    \caption{Code excerpt showing the \code{handle\_syscall\_sem\_vacate}
+    implementation.}
+\end{figure}
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=117,firstline=117,lastline=120]
+    {../../../src/proc/syscall.c}
+    \label{code:handle_syscall_sem_destroy}
+    \caption{Code excerpt showing the \code{handle\_syscall\_sem\_destroy}
+    implementation.}
+\end{figure}
+Now, the system calls are being delegated on to the actual semaphore
+implementation.
+
+\subsection{Semaphore Implementation}
+We must now declare the functions which are called by the system calls.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=8,firstline=8,lastline=21]
+    {../../../src/proc/semaphore.h}
+    \label{code:semaphore.h}
+    \caption{Code excerpt showing some of \file{proc/semaphore.h}.}
+\end{figure}
+On lines 8--9 we include the kernel semaphores, which we intend to wrap our
+userland semaphore implementation around, and the kernel configuration
+definitions. On lines 11--12 we define a maximum semaphore name length of
+128 (made up number, no reasoning behind this), as well as the maximum number
+of userland semaphores that should be available on the system --- this number,
+however, is limited to half of the kernel semaphore capacity.
+
+On line 16 we declare the \code{usr\_sem\_t} type, which serves as a handle
+for the user to acquire and manipulate userland semaphores.
+
+We will make sure that our userland semaphores are initialized, so on line
+16 we declare a function for that. A call to this function was then added to
+\file{init/main.c} after kernel semaphore initialization.
+
+On lines 18--21 we declare the actual semaphore functions, called from
+\file{proc/syscall.c}.
+
+The actual semaphore data is masked by \code{usr\_sem\_t}, such that the user
+cannot change the data stored within it. So we declared the structure
+\code{sem\_t} which is obscurred by \code{usr\_sem\_t}. Since this type must
+remain out the reach of the user, we declared it in \file{proc/semaphore.c},
+making it available for the implementation but inaccessible to the user.
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=11,firstline=11,lastline=15]
+    {../../../src/proc/semaphore.c}
+    \label{code:sem_t}
+    \caption{Code excerpt showing the \code{sem\_t} type declaration.}
+\end{figure}
+

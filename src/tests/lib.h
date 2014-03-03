@@ -41,7 +41,7 @@
 #include "proc/semaphore.h"
 
 /* Filehandles for input and output */
-#define stdin 0
+#define stdin  0
 #define stdout 1
 #define stderr 2
 
@@ -49,7 +49,6 @@
 uint32_t _syscall(uint32_t syscall_num, uint32_t a1, uint32_t a2, uint32_t a3);
 
 /* The library functions which are just wrappers to the _syscall function. */
-
 void syscall_halt(void);
 
 int syscall_exec(const char *filename);
