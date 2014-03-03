@@ -134,3 +134,28 @@ doing so, we ensure that the spinlock is also initialized on line 34.
 \codefig{semaphore_userland_init}{proc/semaphore.c}{32}{49}
 {Code excerpt showing the \code{semaphore\_userland\_init} implementation.}
 
+On to the functions of interest. We {\it open} a semaphore by the following
+logic; if the \code{value} is negative, we want to return an existing
+semaphore, if it exists, otherwise \code{NULL}, as done on lines 53--55. If,
+however, the \code{value} is zero or positive, we want to check if a semaphore
+of that \code{name} exists already, and return that (as done on line 56),
+otherwise we must create it. So, we loop through the userland semaphore table
+looking for an invalid semaphore (lines 63--77), such that we can occupy that
+space in the table with a new semaphore, created on lines 69--76. After the
+loop, we check to see if the iterator went beyond the capacity of the table
+(line 83), which would indicate no more space is available, in which case we
+return \code{NULL}. Otherwise, we were succesful and return the newly created
+semaphore on line 84.
+
+\codefig{semaphore_userland_open}{proc/semaphore.c}{51}{85}
+{Code excerpt showing the \code{semaphore\_userland\_open} implemenation.}
+
+\codefig{semaphore_userland_procure}{proc/semaphore.c}{91}{108}
+{Code excerpt showing the \code{semaphore\_userland\_procure} implemenation.}
+
+\codefig{semaphore_userland_vacate}{proc/semaphore.c}{110}{126}
+{Code excerpt showing the \code{semaphore\_userland\_vacate} implemenation.}
+
+\codefig{semaphore_userland_destroy}{proc/semaphore.c}{128}{150}
+{Code excerpt showing the \code{semaphore\_userland\_destroy} implemenation.}
+
