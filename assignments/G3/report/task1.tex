@@ -39,7 +39,8 @@ and deallocate memory for the stack data structure, that is, not the
 \verb|list_t| structure or the nodes of the list, but just \verb|struct stack_t|.
 
 The function \verb|stack_destroy| serves the purpose of freeing the memory used
-for any remaining elements on the stack and destroying the mutex lock. To avoid
+for any remaining elements on the stack, by traversing the list and calling
+\verb|free| on each \verb|list_t| node, and destroying the mutex lock. To avoid
 conflicts with other threads, the mutex is locked by the current thread before
 deallocating the elements in the stack. This has the effect, that whenever any
 other thread tries to acquire the mutex lock, the call will block and execution
@@ -50,8 +51,54 @@ before destroying it. Also, this current implementation might allow another
 thread to lock the mutex and begin work on the, now empty, stack just before the
 mutex is destroyed, resulting in undefinded behaviour.
 
-\codefig{stack_init}{../assignments/G3/task1/stack.c}{23}{58}
+\codefig{stack_destroy}{../assignments/G3/task1/stack.c}{23}{58}
         {Destroying a stack.}
+
+The function \verb|stack_empty| simply checks whether the stack is empty by
+checking if the \verb|top| pointer is \verb|NULL|, returning 0 if the stack is
+not empty and a positive non-zero integer if the stack is empty. The function
+\verb|stack_top| first checks if the stack is empty, returns \verb|NULL| if that
+is the case and otherwise returns the pointer given in the \verb|head| member of
+the list struct that the \verb|top| member points to. The return type is a
+\verb|void| pointer which allows any data to be pointed to and stored in the
+list.  The code for these two functions are shown in figure
+\ref{code:stack_empty_top}.
+
+%These functions obviously runs in \(O(1)\) since only a constant number of
+%comparisons and struct lookups are performed.
+
+\codefig{stack_empty_top}{../assignments/G3/task1/stack.c}{60}{69}
+        {\texttt{stack\_empty} and \texttt{stack\_top} functions.}
+
+The functions \verb|stack_pop| and \verb|stack_push| works very similarly. First
+the mutex is locked by the currently executing thread by calling
+\verb|pthread_mutex_lock(&mutex)|, this locks the mutex and thereby making every
+subsequent call block until the thread that locked the mutex unlocks it by
+calling \verb|pthread_mutex_unlock(&mutex)|. Between the locking and unlocking,
+the actual work on the stack is performed. In \verb|stack_pop|, the head of the
+list is returned, the pointer in the stack is updated to the tail pointer in the
+head of the list and the memory of the head element is freed. This
+function is shown in the following code excerpt in figure \ref{code:stack_pop}.
+
+\codefig{stack_pop}{../assignments/G3/task1/stack.c}{71}{99}
+{Function \texttt{stack\_pop}. Pop top element of stack.}
+
+If the stack is empty, the call to \verb|stack_pop| will return \verb|NULL| and
+this will be done without ever locking a mutex since the call to
+\verb|stack_emtpy| does not lock a mutex either and the function returns if that
+is the case.
+
+The function \verb|stack_push| also locks and unlocks the mutex lock before and
+after the actual operation on the stack. Memory is allocated for a new list
+element using \verb|malloc|, the head pointer in this new element is set to
+point to the element being inserted. The tail pointer in the new element is
+assigned the address of the element on the top of the stack and the \verb|top|
+pointer in the stack struct is assigned the address of the new list element.
+This is shown in figure \ref{code:stack_push}.
+
+\codefig{stack_push}{../assignments/G3/task1/stack.c}{101}{125}
+{Function \texttt{stack\_push}. Push a new element onto the stack.}
+
 
 \subsection{Multi threaded matrix multiplication}
 We have implemented a matrix multiplication function that is easy to use in a
