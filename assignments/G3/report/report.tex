@@ -5,6 +5,7 @@
 \usepackage{color}              % so purrty
 \usepackage{float}              % put things exactly where I tell you!
 \usepackage[utf8]{inputenc}     % i can has UTF-8
+\usepackage[T1]{fontenc}        % black magic, Volemort was here
 \usepackage{listings}           % pretty-colored code excerpts
 \usepackage{multicol}           % such column.. very multi.. wow!
 
@@ -12,6 +13,8 @@
 \definecolor{keyword}{rgb}      {0.10, 0.10, 0.81}
 \definecolor{identifier}{rgb}   {0.00, 0.00, 0.00}
 \definecolor{string}{rgb}       {0.50, 0.50, 0.50}
+
+\setlength\parindent{0pt}       % Fuck indentations
 
 \newcommand{\code}[1]{{\tt #1}}
 \newcommand{\file}[1]{{\tt #1}}

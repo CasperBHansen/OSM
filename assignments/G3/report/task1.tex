@@ -56,9 +56,8 @@ mutex is destroyed, resulting in undefinded behaviour.
 \subsection{Multi threaded matrix multiplication}
 We have implemented a matrix multiplication function that is easy to use in a
 multi threaded environment and reap its benefits, ie. starting several threads
-and then combining the results, also known as parallel programming\\
-\\.
-The \textsf{struct matrix\_t} is defined as follows:\\
+and then combining the results, also known as parallel programming.\\
+\\
 \codefig{matrix_t-struct}{../assignments/G3/task1/matmult.c}{10}{13}{C struct for
 a matrix}
 where the integer pointer \textsf{mat} points to the first number in the matrix,
@@ -76,4 +75,44 @@ function for matrices}
 The function takes a void pointer, this is the task, it's then cast to a task\_t
 pointer. If the first matrix's, lhs, row number and the second matrix's, rhs,
 column number do not match, the function exits since, it's not a valid matrix
-multiplication.
+multiplication.\\
+Then the row of LHS-matrix and the column of RHS-matrix are multiplied and
+put into the integer \textsf{ret} after this \textsf{pthread\_exit((void *)
+ret);} is issued, returning the value through a void pointer.\\
+
+\codefig{main_decl}{../assignments/G3/task1/matmult.c}{62}{77}{main function,
+section where declarations happen}
+Nothing interesting happens here, some declarations and the two matrices that
+are to be multiplied are printed.\\
+
+\codefig{main_stack}{../assignments/G3/task1/matmult.c}{80}{90}{main function,
+section where row-column multiplication tasks are pushed onto the stack.}
+The first thing inside the second for loop to happen is the creation of a task.
+One task for each lhs.row or rhs.column, depending on your philosophical bend.
+The matrices a and b, defined earlier, are placed into the newly created task,
+then the integers \textsf{x} and \textsf{y}, from the loop counter, are placed
+into the task, \textsf{task->i = x} and \textsf{task->j = y}. And at last the
+task is ready to be pushed onto the stack.\\
+
+\codefig{main_work_init}{../assignments/G3/task1/matmult.c}{92}{102}{main function, 
+variable initialization and some memory allocation.}
+Nothing interesting here apart from the initialization of the matrix that is
+destined to be filled with results from the matrix multiplication.
+
+\codefig{main_work}{../assignments/G3/task1/matmult.c}{104}{117}{main function, 
+thread handling.}
+While the stack, holding the aforementioned tasks, is not empty then the integer
+i is set to zero and three loops are to be gone through.\\
+The first loop, a while loop, pops a certain number of tasks of the stack and
+places them into an array and exists.\\
+The next loop, a for loop, creates the threads and assigns the work which was
+placed onto the array \textsf{tasks} and the function to be carried out on said
+tasks is also defined, in this case \textsf{row\_col\_mult} which is defined
+above.\\
+The last loop fetches the result from the threads with the function
+\textsf{pthread\_join} and puts the result into the matrix \textsf{res\_mat}.
+After that the array tasks is deallocated.\\
+
+\codefig{main_work}{../assignments/G3/task1/matmult.c}{119}{127}{main function, 
+prints the resulting matrix and frees the stack.}
+This last bit of code prints the resulting matrix and deallocates the stack.
