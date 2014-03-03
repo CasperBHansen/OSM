@@ -53,39 +53,35 @@ usr_sem_t * semaphore_userland_open(const char * name, int value)
     sem_t * sem = (sem_t *)semaphore_userland_get(name);
     
     if (value < 0) return sem; // fetch a pre-existing semaphore
-    else {
-        if (sem) return NULL; // error, semaphore already exists
+    if (sem) return NULL; // error, semaphore already exists
         
-        interrupt_status_t intr_status;
-        
-        intr_status = _interrupt_disable();
-        spinlock_acquire(&semaphore_userland_table_slock);
-        
-        static int next = 0; 
-        int sem_id, i;
-        // find available space for a new semaphore
-        for(i = 0; i < SEMAPHORE_MAX_USER_SEMAPHORES; i++) {
-            sem_id = next;
-            next = (next + 1) % SEMAPHORE_MAX_USER_SEMAPHORES;
-            if (semaphore_userland_table[sem_id].kernel_sem == NULL) {
-                // space found, create the semaphore
-                stringcopy((char *)semaphore_userland_table[sem_id].name, name, SEMAPHORE_NAME_LENGTH);
-                semaphore_userland_table[sem_id].kernel_sem = semaphore_create(value);
-                semaphore_userland_table[sem_id].resources = value;
-                // kprintf("Created semaphore with id %i\n", sem_id);
-                break;
-            }
+    interrupt_status_t intr_status;
+    
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&semaphore_userland_table_slock);
+    
+    static int next = 0; 
+    int sem_id, i;
+    // find available space for a new semaphore
+    for(i = 0; i < SEMAPHORE_MAX_USER_SEMAPHORES; i++) {
+        sem_id = next;
+        next = (next + 1) % SEMAPHORE_MAX_USER_SEMAPHORES;
+        if (semaphore_userland_table[sem_id].kernel_sem == NULL) {
+            // space found, create the semaphore
+            stringcopy((char *)semaphore_userland_table[sem_id].name, name, SEMAPHORE_NAME_LENGTH);
+            semaphore_userland_table[sem_id].kernel_sem = semaphore_create(value);
+            semaphore_userland_table[sem_id].resources = value;
+            // kprintf("Created semaphore with id %i\n", sem_id);
+            break;
         }
-        
-        spinlock_release(&semaphore_userland_table_slock);
-        _interrupt_set_state(intr_status);
-        
-        if (i == SEMAPHORE_MAX_USER_SEMAPHORES) return NULL;
-        
-        return (usr_sem_t *)&semaphore_userland_table[sem_id];
     }
     
-    return NULL;
+    spinlock_release(&semaphore_userland_table_slock);
+    _interrupt_set_state(intr_status);
+    
+    if (i == SEMAPHORE_MAX_USER_SEMAPHORES) return NULL;
+    
+    return (usr_sem_t *)&semaphore_userland_table[sem_id];
 }
 
 int semaphore_userland_procure(usr_sem_t * handle)
@@ -119,6 +115,7 @@ int semaphore_userland_vacate(usr_sem_t * handle)
     
     if (sem->kernel_sem) semaphore_V(sem->kernel_sem);
     else ret = -1;
+    
     spinlock_release(&semaphore_userland_table_slock);
     _interrupt_set_state(intr_status);
     
