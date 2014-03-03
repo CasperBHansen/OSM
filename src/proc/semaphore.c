@@ -115,6 +115,7 @@ int semaphore_userland_vacate(usr_sem_t * handle)
     
     if (sem->kernel_sem) semaphore_V(sem->kernel_sem);
     else ret = -1;
+    
     spinlock_release(&semaphore_userland_table_slock);
     _interrupt_set_state(intr_status);
     

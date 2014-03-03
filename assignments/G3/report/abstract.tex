@@ -4,4 +4,14 @@
 % An abstract of the report.
 %
 
-...
+We discuss our implementation of thread-safe multithreaded matrix
+multiplication, using a stack. Herein we detail the workings of the stack,
+how it was made to utilize posix threads, and the thread-safety issues that
+were considered during development thereof. This thread-safe stack is then
+put to the test by a threaded matrix multiplication program utilizing the
+discussed stack.
+
+Then, we proceed to a discussion of implementing userland semaphores in
+Buenos. We cover the preliminary implementation preparations, allowing the
+user to perform the necessary system calls. Moving on from there we extend
+the kernel semaphore implementation to facilitate userland semaphores.

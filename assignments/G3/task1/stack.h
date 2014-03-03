@@ -7,10 +7,10 @@ typedef struct list_t {
     struct list_t *tail;
 } list_t;
 
-/* Dynamically allocated limitless stack implemented using a singly-linked list.
- * The structure member 'top' is a pointer to the list containing the elements
- * on the stack; the head of the list is a void pointer to the top element on
- * the stack. If top is NULL, the stack is empty. */
+/* Dynamically allocated limitless stack implemented using a singly-linked
+ * list. The structure member 'top' is a pointer to the list containing the
+ * elements on the stack; the head of the list is a void pointer to the top
+ * element on the stack. If top is NULL, the stack is empty. */
 typedef struct stack_t {
     list_t *top;
 } stack_t;
