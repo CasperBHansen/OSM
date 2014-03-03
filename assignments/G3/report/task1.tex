@@ -6,3 +6,31 @@
 
 \section{Task 1}
 ...
+
+
+\subsection{Multi threaded matrix multiplication}
+We have implemented a matrix multiplication function that is easy to use in a
+multi threaded environment and reap its benefits, ie. starting several threads
+and then combining the results, also known as parallel programming\\
+\\.
+The \textsf{struct matrix\_t} is defined as follows:\\
+\codefig{matrix_t-struct}{../assignments/G3/task1/matmult.c}{10}{13}{C struct for
+a matrix}
+where the integer pointer \textsf{mat} points to the first number in the matrix,
+\textsf{m} is its rows and \textsf{n} is its columns and are integers.\\
+The \textsf{struct task\_t} is a task, which is sent to the thread/processor:\\
+\codefig{task_t-struct}{../assignments/G3/task1/matmult.c}{15}{18}{C struct for
+a task}
+The two fields \textsf{lhs} and \textsf{rhs} are matrix\_t pointers, which holds the two
+matrices that are to be multiplicated and the integers \textsf{i} and \textsf{j} hold
+the current position.\\
+\\
+The multiplication function:
+\codefig{matmult}{../assignments/G3/task1/matmult.c}{43}{60}{Multiplication
+function for matrices}
+The function takes a void pointer, this is the task, it's then cast to a task\_t
+pointer. If the first matrix's, lhs, row number and the second matrix's, rhs,
+column number do not match, the function exits since, it's not a valid matrix
+multiplication.
+
+

@@ -5,7 +5,7 @@
 
 #include "stack.h"
 
-#define NUM_THREADS 4
+#define NUM_THREADS 5
 
 typedef struct {
     int * mat;
@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
     stack_t *stack = malloc(sizeof(stack_t));
     stack_init(stack);
 
-    matrix_t *a = make_mat(4,4);
-    matrix_t *b = make_mat(4,4);
+    matrix_t *a = make_mat(5,5);
+    matrix_t *b = make_mat(5,5);
 
     printf("Matrix a:\n");
     print_matrix(a);
