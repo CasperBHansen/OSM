@@ -31,7 +31,7 @@ call handlers.
 Further, we added the prototype semaphore functions in \file{tests/lib.h} for
 the userland library.
 
-\codefig{userland-library-prototypes}{tests/lib.h}{70}{75}
+\codefig{userland-library-prototypes}{tests/lib.h}{70}{73}
 {Code excerpt showing the userland library prototype functions.}
 
 Lastly, for bridging the gap from the userland library in \file{tests/lib.h}
@@ -180,4 +180,15 @@ making the space the userland semaphore occupied available again.
  
 \codefig{semaphore_userland_destroy}{proc/semaphore.c}{125}{147}
 {Code excerpt showing the \code{semaphore\_userland\_destroy} implemenation.}
+
+\subsection{Tests}
+We had a difficult time figuring out a proper test. We came up with the
+program \file{tests/semaphore.c} provided with the source code. Its purpose is
+to create 10 userland semaphores, and then procure one of them to its maximum
+available resources. We then vacate that semaphore once, and try to destroy
+it, expecting the operation to fail --- which it does. We then vacate it, such
+that it becomes ready to be destroyed and then destroy it. There are now 9
+semaphores open, so by opening \code{SEMAPHORE\_MAX\_USER\_SEMAPHORES - 7} new
+semaphores we will go beyong the limit, and we expect two error messages to be
+displayed --- which it also does.
 
