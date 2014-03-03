@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
     stack_t *stack = malloc(sizeof(stack_t));
     stack_init(stack);
 
-    matrix_t *a = make_mat(5,5);
-    matrix_t *b = make_mat(5,5);
+    matrix_t *a = make_mat(4, 6);
+    matrix_t *b = make_mat(6, 8);
 
     printf("Matrix a:\n");
     print_matrix(a);
@@ -90,9 +90,10 @@ int main(int argc, char **argv) {
     }
 
     task_t *task;
-    int c;
-    void *ret;
+    int c, i;     // counter variables
+    void *ret;    // to contain return value from pthread_join
 
+    // allocate memory for result matrix and set size
     matrix_t *res_mat = malloc(sizeof(matrix_t));
     res_mat->m = a->n;
     res_mat->n = b->m;
@@ -101,14 +102,14 @@ int main(int argc, char **argv) {
     task_t *tasks[NUM_THREADS];
 
     while(! stack_empty(stack)) {
-        c = 0;
-        while(c < NUM_THREADS && (task = (task_t *) stack_pop(stack)) != NULL)
-            tasks[c++] = task;
+        i = 0;
+        while(i < NUM_THREADS && (! stack_empty(stack)))
+            tasks[i++] = (task_t *) stack_pop(stack);
 
-        for (c = 0; c < NUM_THREADS; c++)
+        for (c = 0; c < NUM_THREADS && c < i; c++)
             pthread_create(&tids[c], NULL, &row_col_mult, tasks[c]);
 
-        for (c = 0; c < NUM_THREADS; c++) {
+        for (c = 0; c < NUM_THREADS && c < i; c++) {
             pthread_join(tids[c], (void **) &ret);
             res_mat->mat[res_mat->m * tasks[c]->i + tasks[c]->j] = ret;
             free(tasks[c]);

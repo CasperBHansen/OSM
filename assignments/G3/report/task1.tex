@@ -1,12 +1,57 @@
 %
 % task1.tex
 %
-% ...
+% Task 1: A Thread-Safe Stack
 %
+\section{Thread-safe multithreaded matrix multiplication}
+In this section, the implementation of a thread-safe stack, that can handle
+concurrent access by multiple threads in a safe manner, is explained. This is
+done using \verb|PThread| mutex locks.
 
-\section{Task 1}
-...
+\subsection{A thread-safe stack}
+The interface of the stack, as specified
+in the task description, is shown in the code excerpt from the header file
+\file{stack.h} in figure \ref{code:stack_h}.
 
+\codefig{stack_h}{../assignments/G3/task1/stack.h}{4}{39}
+        {Stack header file \file{stack.h}.}
+
+The stack data structure is implemented using a simple singly-linked list,
+stored in the \verb|list_t| struct, where \verb|head| is a \verb|void| pointer
+to the element stored in the head node of the list and \verb|tail| is a
+recursive pointer the data structure, containing the tail of the list.
+The stack data structure is implemented with the \verb|stack_t| structure, which
+simply contains a pointer to the list structure that stores the elements in the
+stack. Hence, the stack can be arbitrarily large and memory is
+allocated/deallocated on each push/pop of an element on the stack.
+
+A stack is initialized by setting the struct member \verb|top| to \verb|NULL|,
+indicating that the stack is empty, and initializing a \verb|PThread| mutex.
+The \verb|stack_init| function is shown in figure \ref{code:stack_init}.
+
+\codefig{stack_init}{../assignments/G3/task1/stack.c}{7}{21}
+        {Initialization of a new stack.}
+
+The function call \verb|pthread_mutex_init(&mutex, NULL)| initializes the
+globally declared \verb|PThread| mutex with default properties and leaves it
+initially unlocked. It is the responsibility of the programmer to allocate
+and deallocate memory for the stack data structure, that is, not the
+\verb|list_t| structure or the nodes of the list, but just \verb|struct stack_t|.
+
+The function \verb|stack_destroy| serves the purpose of freeing the memory used
+for any remaining elements on the stack and destroying the mutex lock. To avoid
+conflicts with other threads, the mutex is locked by the current thread before
+deallocating the elements in the stack. This has the effect, that whenever any
+other thread tries to acquire the mutex lock, the call will block and execution
+will not continue until the lock is unlocked by the thread that owns it at that
+time. After this, the lock is unlocked and destroyed. Depending on the
+implementation of the mutex lock, is might not be necessary to unlock the mutex
+before destroying it. Also, this current implementation might allow another
+thread to lock the mutex and begin work on the, now empty, stack just before the
+mutex is destroyed, resulting in undefinded behaviour.
+
+\codefig{stack_init}{../assignments/G3/task1/stack.c}{23}{58}
+        {Destroying a stack.}
 
 \subsection{Multi threaded matrix multiplication}
 We have implemented a matrix multiplication function that is easy to use in a
@@ -32,5 +77,3 @@ The function takes a void pointer, this is the task, it's then cast to a task\_t
 pointer. If the first matrix's, lhs, row number and the second matrix's, rhs,
 column number do not match, the function exits since, it's not a valid matrix
 multiplication.
-
-
