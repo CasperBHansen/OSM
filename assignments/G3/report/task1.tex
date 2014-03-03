@@ -1,8 +1,13 @@
 %
 % task1.tex
 %
-% ...
+% Task 1: A Thread-Safe Stack
 %
+\section{A Thread-Safe Stack}
+In this section, the implementation of a thread-safe stack, that can handle
+concurrent access by multiple threads in a safe manner, is explained. This is
+done using \verb|PThread| mutex locks. The interface of the stack, as specified
+in the task description, is shown in the code excerpt from the header file
+\file{stack.h} in figure \ref{lst:stack_h}.
 
-\section{Task 1}
-...
+\codefig{lst:stack_h}{../task1/stack.h}{5}{10}{Code}
