@@ -75,8 +75,23 @@ void handle_syscall_join(context_t * user_context) {
  * Handle SYSCALL_MEMLIMIT syscall.
  */
 void handle_syscall_memlimit(context_t *user_context) {
-    user_context = user_context;
-    KERNEL_PANIC("syscall_memlimit is not implemented yet\n");
+    const uint32_t heap_end = user_context->cpu_regs[MIPS_REGISTER_A1];
+
+    kprintf("sp: %i\n", user_context->cpu_regs[MIPS_REGISTER_SP]);
+    kprintf("gp: %i\n", user_context->cpu_regs[MIPS_REGISTER_GP]);
+
+    if ((void *) heap_end == NULL) {
+        user_context->cpu_regs[MIPS_REGISTER_V0] =
+            (uint32_t) process_get_current_process_entry()->heap_end;
+        return;
+    }
+
+    if (heap_end < process_get_current_process_entry()->heap_end) {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = NULL;
+        return;
+    }
+
+    user_context->cpu_regs[MIPS_REGISTER_V0] = NULL;
 }
 
 /**

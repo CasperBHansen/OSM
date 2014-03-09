@@ -40,6 +40,7 @@
 #include "kernel/cswitch.h"
 
 typedef int process_id_t;
+typedef void heap_ptr_t;
 
 #define USERLAND_STACK_TOP 0x7fffeffc
 
@@ -76,13 +77,9 @@ typedef struct {
 
     // return value
     int retval;
-    
-    // accounting information, not used at this time
-    struct {
-        uint64_t cpu;
-        uint64_t user;
-    } usage;
 
+    // heap pointer
+    heap_ptr_t *heap_end;
 } process_control_block_t;
 
 

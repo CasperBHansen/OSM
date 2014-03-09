@@ -35,10 +35,13 @@
  */
 
 #include "kernel/assert.h"
+#include "kernel/interrupt.h"
 #include "kernel/panic.h"
 #include "kernel/thread.h"
 #include "vm/tlb.h"
 #include "vm/pagetable.h"
+
+#define EVEN_ODD_BIT 4096
 
 int tlb_load_store_exception(void) {
     // load exception state into state structure
@@ -51,17 +54,20 @@ int tlb_load_store_exception(void) {
     pagetable_t *p_table = t_table->pagetable;
     tlb_entry_t *p_entries = p_table->entries; // PAGETABLE_ENTRIES entries in array
 
-    int i;
+    int odd = state.badvaddr & EVEN_ODD_BIT;
+
+    int i, index;
     for (i = 0; i < PAGETABLE_ENTRIES; i++) {
-        if (p_entries[i].VPN2 == badvpn2) {
-            _tlb_write_random(&p_entries[i]);
-            kprintf("page table entry %d found\n", i);
+        if (p_entries[i].VPN2 == badvpn2 && (odd ? p_entries[i].V1 : p_entries[i].V0)) {
+            p_entries[i].ASID = state.asid;
+            index = _tlb_probe(&p_entries[i]);
+            if (index < 0)
+                _tlb_write_random(&p_entries[i]);
+            else
+                _tlb_write(&p_entries[i], index, 1);
             return 0;
         }
     }
-
-    kprintf("badvpn %d not found!\n", badvpn2);
-
     return 1;
 }
 
@@ -91,20 +97,20 @@ void tlb_store_exception(void)
  *
  */
 
-void tlb_fill(pagetable_t *pagetable)
-{
-    if(pagetable == NULL)
-	return;
-
-    /* Check that the pagetable can fit into TLB. This is needed until
-     we have proper VM system, because the whole pagetable must fit
-     into TLB. */
-    KERNEL_ASSERT(pagetable->valid_count <= (_tlb_get_maxindex()+1));
-
-    _tlb_write(pagetable->entries, 0, pagetable->valid_count);
-
-    /* Set ASID field in Co-Processor 0 to match thread ID so that
-       only entries with the ASID of the current thread will match in
-       the TLB hardware. */
-    _tlb_set_asid(pagetable->ASID);
-}
+//void tlb_fill(pagetable_t *pagetable)
+//{
+//    if(pagetable == NULL)
+//	return;
+//
+//    /* Check that the pagetable can fit into TLB. This is needed until
+//     we have proper VM system, because the whole pagetable must fit
+//     into TLB. */
+//    KERNEL_ASSERT(pagetable->valid_count <= (_tlb_get_maxindex()+1));
+//
+//    _tlb_write(pagetable->entries, 0, pagetable->valid_count);
+//
+//    /* Set ASID field in Co-Processor 0 to match thread ID so that
+//       only entries with the ASID of the current thread will match in
+//       the TLB hardware. */
+//    _tlb_set_asid(pagetable->ASID);
+//}

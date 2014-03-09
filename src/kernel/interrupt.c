@@ -158,8 +158,8 @@ void interrupt_handle(uint32_t cause) {
 
     /* Exceptions should be handled elsewhere: */
     if((cause  & 0x0000007c) != 0) {
-    kprintf("Caught exception, cause %.8x, CPU %i\n", cause, this_cpu);
-    KERNEL_PANIC("Exception in interrupt_handle");
+        kprintf("Caught exception, cause %.8x, CPU %i\n", cause, this_cpu);
+        KERNEL_PANIC("Exception in interrupt_handle");
     }
 
 
@@ -198,8 +198,9 @@ void interrupt_handle(uint32_t cause) {
            you implement proper VM), you must manually call _tlb_set_asid
            here. See the implementation of tlb_fill on details how to do that.
         */
-        tlb_fill(thread_get_current_thread_entry()->pagetable);
+        //tlb_fill(thread_get_current_thread_entry()->pagetable);
 
-        //_tlb_set_asid(thread_get_current_thread_entry()->pagetable->ASID);
+        if (thread_get_current_thread_entry()->pagetable != NULL)
+            _tlb_set_asid(thread_get_current_thread_entry()->pagetable->ASID);
     }
 }
