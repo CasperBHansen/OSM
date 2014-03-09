@@ -72,6 +72,14 @@ void handle_syscall_join(context_t * user_context) {
 }
 
 /**
+ * Handle SYSCALL_MEMLIMIT syscall.
+ */
+void handle_syscall_memlimit(context_t *user_context) {
+    user_context = user_context;
+    KERNEL_PANIC("syscall_memlimit is not implemented yet\n");
+}
+
+/**
  * Handle SYSCALL_READ syscall.
  */
 void handle_syscall_read(context_t *user_context) {
@@ -174,6 +182,9 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_JOIN:
         handle_syscall_join(user_context);
+        break;
+    case SYSCALL_MEMLIMIT:
+        handle_syscall_memlimit(user_context);
         break;
     case SYSCALL_READ:
         handle_syscall_read(user_context);

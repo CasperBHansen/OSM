@@ -141,6 +141,7 @@ void process_start(uint32_t pid)
        handling this call should be skipped. */
     intr_status = _interrupt_disable();
     tlb_fill(my_entry->pagetable);
+    //_tlb_set_asid(my_entry->pagetable->ASID);
     _interrupt_set_state(intr_status);
     
     /* Now we may use the virtual addresses of the segments. */
@@ -179,6 +180,7 @@ void process_start(uint32_t pid)
     /* Insert page mappings again to TLB to take read-only bits into use */
     intr_status = _interrupt_disable();
     tlb_fill(my_entry->pagetable);
+    //_tlb_set_asid(my_entry->pagetable->ASID);
     _interrupt_set_state(intr_status);
 
     /* Initialize the user context. (Status register is handled by

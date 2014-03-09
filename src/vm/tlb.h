@@ -87,7 +87,7 @@ typedef struct {
 typedef struct {
     uint32_t badvaddr; /* Address that caused the exception*/
     uint32_t badvpn2;  /* VPN2 of the above */
-    uint32_t asid; /* ASID of the causing process, only 8 lowest bits used */
+    uint32_t asid;     /* ASID of the causing process, only 8 lowest bits used */
 } tlb_exception_state_t;
 
 /* exception handlers */

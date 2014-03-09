@@ -34,10 +34,36 @@
  *
  */
 
-#include "kernel/panic.h"
 #include "kernel/assert.h"
+#include "kernel/panic.h"
+#include "kernel/thread.h"
 #include "vm/tlb.h"
 #include "vm/pagetable.h"
+
+int tlb_load_store_exception(void) {
+    // load exception state into state structure
+    tlb_exception_state_t state;
+    _tlb_get_exception_state(&state);
+    uint32_t badvpn2 = state.badvpn2;
+
+    // access page entries array in pagetable struct in thread struct
+    thread_table_t *t_table = thread_get_current_thread_entry();
+    pagetable_t *p_table = t_table->pagetable;
+    tlb_entry_t *p_entries = p_table->entries; // PAGETABLE_ENTRIES entries in array
+
+    int i;
+    for (i = 0; i < PAGETABLE_ENTRIES; i++) {
+        if (p_entries[i].VPN2 == badvpn2) {
+            _tlb_write_random(&p_entries[i]);
+            kprintf("page table entry %d found\n", i);
+            return 0;
+        }
+    }
+
+    kprintf("badvpn %d not found!\n", badvpn2);
+
+    return 1;
+}
 
 void tlb_modified_exception(void)
 {
@@ -46,12 +72,14 @@ void tlb_modified_exception(void)
 
 void tlb_load_exception(void)
 {
-    KERNEL_PANIC("Unhandled TLB load exception");
+    if (tlb_load_store_exception())
+        KERNEL_PANIC("TLB load exception: page entry not found or invalid.");
 }
 
 void tlb_store_exception(void)
 {
-    KERNEL_PANIC("Unhandled TLB store exception");
+    if (tlb_load_store_exception())
+        KERNEL_PANIC("TLB store exception: page entry not found or invalid.");
 }
 
 /**
