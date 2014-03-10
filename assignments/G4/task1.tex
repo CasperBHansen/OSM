@@ -10,23 +10,23 @@
                           \code{tlb\_store\_exception}.}
 
 \codefig{badvpn2}{vm/tlb.c}{48}{50}
-    {...}
+    {Declaration of state and badvpn2}
 A \code{tlb\_exception\_state\_t} is created and the current state is loaded
 into it, the pagenumber is also saved to \code{unint32\_t badvpn2}. vpn2
 basically means two pages, ie. 8192 bytes or 2 KiB.
 
 
 \codefig{thread}{vm/tlb.c}{53}{55}
-    {...}
+    {Declaration of \code{*t\_table}, \code{*p\_table} and \code{*p\_entries}}
 The pointer to the current thread entry is put into \code{*t\_table}, through
 that the pointer to the pagetable is found and put into \code{*p\_table}. The
 pointer to the pagetables, ie. entries, is then put into \code{*p\_entries}.
 
 \codefig{even_odd}{vm/tlb.c}{57}{57}
-    {...}
+    {Declaration of odd and bitwise magic happens.}
 
 \codefig{tlb_ls_for}{vm/tlb.c}{59}{70}
-    {...}
+    {A loop through \code{p\_entries} and possibly some declarations.}
 A for loop that goes through the entries on the current thread. Then if the
 current vpn, found through \code{p\_entries[i]} equals to the \code{badvpn2}
 found before and the register returned are bigger than 0, then the current entry's ASID,
