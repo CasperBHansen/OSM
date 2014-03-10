@@ -73,7 +73,16 @@ int tlb_load_store_exception(void) {
 
 void tlb_modified_exception(void)
 {
-    KERNEL_PANIC("Unhandled TLB modified exception");
+    context_t *user_context = thread_get_current_thread_entry()->user_context;
+    if (user_context->status & USERLAND_ENABLE_BIT) {
+        // thread is running a userland process
+        kprintf("Access violation: a memory store operation required a page \
+                 whose dirty bit was 0 (not writable). Ending thread..");
+        thread_finish(); // make the thread kill itself
+    } 
+    // kernel mode
+    KERNEL_PANIC("A memory store operation required a page whose dirty \
+                  bit was 0, i.e. page not writable.");
 }
 
 void tlb_load_exception(void)
