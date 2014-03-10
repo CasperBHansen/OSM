@@ -1,1 +1,8 @@
-...
+We discuss the implementation of translate lookaside buffer exception
+handlers, which must fetch requested virtual pages and replace old table
+entries with new ones whenever needed.
+
+Then we turn to dynamic memory allocation for userland processes, which
+involves making slight adjustsments in the implementation to facilitate the
+system calls and library functions to be implemented. From there we discuss
+the implementation of these.
