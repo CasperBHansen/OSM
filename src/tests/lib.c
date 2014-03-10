@@ -794,18 +794,11 @@ void *malloc(size_t size) {
     block->size = size;
     block->next = NULL;
     
-    //void * heap_ptr = syscall_memlimit( (void *)(block + block->size + sizeof(size_t)));
-    void * heap_ptr = syscall_memlimit( (void *)(block + sizeof(size_t)));
-    
-    printf("Heap: %i -> %i\n", block, heap_ptr);
+    // allocate the memory requested
+    syscall_memlimit( (void *)(block + sizeof(size_t)));
 
-    // return the address of block + offset to the actual data (block + size_t).
-    /*printf("malloc returns addr: %i\n", (uint32_t) (heap_ptr - block->size));
-    return heap_ptr - block->size; */ /*(block + sizeof(size_t));*/
-
-    printf("malloc returns addr: %i\n", (uint32_t) block + sizeof(size_t)); 
-    return block + sizeof(size_t);
-
+    // data is at the block address + sizeof(size_t).
+    return (block + sizeof(size_t));
 }
 
 /* Return the block pointed to by ptr to the free pool. */
