@@ -188,7 +188,12 @@ void process_start(uint32_t pid)
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
     
+    // The ELF rw (whatever that is) was allocated last, and must therefore
+    // hold the offset in the program from which WE would like to have our
+    // heap --- ours grow up, because the stack already grows down.
+    process_table[pid].heap_end = (void *)(elf.rw_vaddr + elf.rw_size);
     process_table[pid].state = PROCESS_RUNNING;
+    
     thread_goto_userland(&user_context);
 
     KERNEL_PANIC("thread_goto_userland failed.");

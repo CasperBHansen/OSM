@@ -743,10 +743,8 @@ free_block_t *free_list = NULL;
 void heap_init()
 {
     free_list = (free_block_t*)syscall_memlimit(NULL);
-/*
-    free_list->size = HEAP_SIZE;
+    free_list->size = 0;
     free_list->next = NULL;
- */
 }
 
 
@@ -790,14 +788,13 @@ void *malloc(size_t size) {
     
     // At this point block is NULL, meaning no already allocated free
     // block could be used, therefore we must allocate it using syscall_memlimit
-    //
-    // NB: THIS STILL DOES NOT WORK, BUT THE IDEA SHOULD BE CORRECT
-    //
-    // TODO: FIGURE OUT HOW TO SET BLOCK'S SIZE AND NEXT VALUES WITHOUT ACCESSING
-    //       A NULL-POINTER
     block = (free_block_t *)syscall_memlimit(NULL);
+    block->size = size;
+    block->next = NULL;
+    
     void * heap_ptr = syscall_memlimit( (void *)(block + sizeof(size_t)));
-    printf("Heap %i -> %i\n", block, heap_ptr);
+    
+    printf("Heap: %i -> %i\n", block, heap_ptr);
 
     // return the address of block + offset to the actual data (block + size_t).
     return (block + sizeof(size_t));
