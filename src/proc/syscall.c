@@ -35,6 +35,7 @@
  */
 #include "kernel/cswitch.h"
 #include "kernel/semaphore.h"
+#include "kernel/interrupt.h"
 #include "proc/syscall.h"
 #include "proc/process.h"
 #include "kernel/halt.h"
@@ -44,6 +45,8 @@
 #include "drivers/device.h"
 #include "drivers/gcd.h"
 #include "proc/semaphore.h"
+#include "vm/vm.h"
+#include "vm/pagepool.h"
 
 /**
  * Handle SYSCALL_EXEC syscall.
@@ -76,22 +79,39 @@ void handle_syscall_join(context_t * user_context) {
  */
 void handle_syscall_memlimit(context_t *user_context) {
     const uint32_t heap_end = user_context->cpu_regs[MIPS_REGISTER_A1];
+    uint32_t curr_heap = (uint32_t) process_get_current_process_entry()->heap_end;
 
-    kprintf("sp: %i\n", user_context->cpu_regs[MIPS_REGISTER_SP]);
-    kprintf("gp: %i\n", user_context->cpu_regs[MIPS_REGISTER_GP]);
-
-    if ((void *) heap_end == NULL) {
-        user_context->cpu_regs[MIPS_REGISTER_V0] =
-            (uint32_t) process_get_current_process_entry()->heap_end;
+    if (heap_end == (uint32_t)NULL) {
+        user_context->cpu_regs[MIPS_REGISTER_V0] = curr_heap;
         return;
     }
 
-    if (heap_end < process_get_current_process_entry()->heap_end) {
-        user_context->cpu_regs[MIPS_REGISTER_V0] = NULL;
-        return;
+    // we cannot decrease the heap
+    if (heap_end < curr_heap) KERNEL_PANIC("Cannot decrease heap; vm_unmap unimplemented.");
+    
+    // size required by the allocation minus the current pages
+    // gives us the amount to be allocated
+    int page_size = heap_end / PAGE_SIZE - curr_heap / PAGE_SIZE;
+    
+    interrupt_status_t intr_status;
+    intr_status = _interrupt_disable();
+    
+    // if we're exactly on a page limit then add a page,
+    // otherwise allocate the remainder
+    curr_heap += (curr_heap % PAGE_SIZE == 0) ? PAGE_SIZE : (curr_heap % PAGE_SIZE);
+    
+    // map the pages, shamelessly stolen from process.c
+    int i;
+    for (i = 0; i < page_size; ++i) {
+        uint32_t phys_page = pagepool_get_phys_page();
+        KERNEL_ASSERT(phys_page != 0);
+        vm_map(thread_get_current_thread_entry()->pagetable, phys_page, curr_heap + i * PAGE_SIZE, 1);
     }
-
-    user_context->cpu_regs[MIPS_REGISTER_V0] = NULL;
+    
+    _interrupt_set_state(intr_status);
+    
+    process_get_current_process_entry()->heap_end = (heap_ptr_t *)heap_end;
+    user_context->cpu_regs[MIPS_REGISTER_V0] = heap_end;
 }
 
 /**

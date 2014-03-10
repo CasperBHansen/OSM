@@ -127,13 +127,15 @@ int snprintf(char *, int, const char *, ...);
 #endif
 
 #ifdef PROVIDE_HEAP_ALLOCATOR
-#define HEAP_SIZE 256 /* 256 byte heap - puny! */
+// #define HEAP_SIZE 256 /* 256 byte heap - puny! */
 void heap_init(); /* Call this once before any other heap functions. */
 void *calloc(size_t nmemb, size_t size);
 void *malloc(size_t size);
 void free(void *ptr);
 void *realloc(void *ptr, size_t size);
 #endif
+
+void * malloc(size_t size);
 
 #ifdef PROVIDE_MISC
 int atoi(const char *nptr);

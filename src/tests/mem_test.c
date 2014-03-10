@@ -1,19 +1,21 @@
 #include "tests/lib.h"
 
-static const int magic = 42;
-
-void useStack() {
-    int a[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    a[1] = a[1];
-
-    syscall_memlimit(NULL);
-}
-
 int main()
 {
-    syscall_memlimit(NULL);
-
-    useStack();
-
+    heap_init();
+    
+    int n = 4;
+    int * ints = (int *)malloc(sizeof(int) * n);
+    ints = ints;
+    
+    int i;
+    for (i = 0; i < n; ++i)
+        ints[i] = i * 2;
+    
+    for (i = 0; i < n; ++i)
+        printf("ints[%i] = %i\n", i, ints[i]);
+    
+    free(ints);
+    
     return 0;
 }
