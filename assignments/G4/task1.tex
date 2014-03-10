@@ -5,6 +5,7 @@
 %
 
 \section{TLB Exception Handling}
+\subsection{tlb\_load\_store}
 \codefig{tlb_load_store}{vm/tlb.c}{46}{46}
     {Prototype of function behind \code{tlb\_load\_exception} and
                           \code{tlb\_store\_exception}.}
@@ -37,4 +38,6 @@ zero then a call to \code{\_tlb\_write\_random(...)} is issued, otherwise
 If the first if-clause is not accepted then \code{tlb\_load\_store\_exception}
 returns 1.
 \subsection{Tests}
-...
+\codefig{tlbtests}{tests/tlb_test.c}{1}{36}{TLB test file}
+The premise of this test is that we have a set amount of pages available, where
+each page is 4 KiB. If we go above run out of memory a TLB exception is raised.
