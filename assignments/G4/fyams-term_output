@@ -1,0 +1,184 @@
+Using configuration file ./yams.conf.
+Using socket fyams.socket.
+>>> Waiting for incoming connection on socket 'fyams.socket' ...  Connected
+>>> Escape character is '^]'
+Welcome. This is YAMS virtual terminal.
+
+BUENOS is a University Educational Nutshell Operating System
+==========================================================
+
+Copyright (C) 2003-2006  Juha Aatrokoski, Timo Lilja,
+  Leena Salmela, Teemu Takanen, Aleksi Virtanen
+See the file COPYING for licensing details.
+
+Initializing memory allocation system
+Kernel size is 0x00032ca0 (208032) bytes
+System memory size is 0x04000000 (67108864) bytes
+Reading boot arguments
+Detected 1 CPUs
+Initializing interrupt handling
+Initializing threading system
+Initializing sleep queue
+Initializing semaphores
+Initializing userland semaphores
+Initializing device drivers
+Device: Type 0x201 at 0xb000802c irq 0x4 driver 'Console'
+Device: Type 0x301 at 0xb0008018 irq 0x3 driver 'Disk'
+Device: Type 0xc00 at 0xb0008010 irq 0x0 driver 'CPU status'
+Device: Type 0x101 at 0xb000800c no irq  driver 'System memory information'
+Device: Type 0x102 at 0xb0008004 no irq  driver 'System RTC'
+Device: Type 0x103 at 0xb0008000 no irq  driver 'System shutdown'
+Initializing virtual filesystem
+VFS: Max filesystems: 8, Max open files: 512
+Initializing scheduler
+Initializing virtual memory
+Pagepool: Found 16384 pages of size 4096
+Pagepool: Static allocation for kernel: 70 pages
+Creating initialization thread
+Starting threading system and SMP
+Mounting filesystems
+VFS: TFS initialized on disk at 0xb0008018
+VFS: Mounted filesystem volume [arkimedes]
+Initializing process system
+Initializing networking
+Starting initial program '[arkimedes]mem_test'
+TLB exception. Details:
+Failed Virtual Address: 0x00001000
+Virtual Page Number:    0x00000000
+ASID (Thread number):   1
+TLB exception. Details:
+Failed Virtual Address: 0x00002000
+Virtual Page Number:    0x00000001
+ASID (Thread number):   1
+TLB exception. Details:
+Failed Virtual Address: 0x00004000
+Virtual Page Number:    0x00000002
+ASID (Thread number):   1
+TLB exception. Details:
+Failed Virtual Address: 0x7fffe000
+Virtual Page Number:    0x0003ffff
+ASID (Thread number):   1
+Heap: 16388 -> 17764
+malloc returns addr: 16392
+malloc returns addr: 16520
+ints[0]: 0
+ints[1]: 2
+ints[2]: 4
+ints[3]: 6
+ints[4]: 8
+ints[5]: 10
+ints[6]: 12
+ints[7]: 14
+ints[8]: 16
+ints[9]: 18
+ints[10]: 20
+ints[11]: 22
+ints[12]: 24
+ints[13]: 26
+ints[14]: 28
+ints[15]: 30
+ints[16]: 32
+ints[17]: 34
+ints[18]: 36
+ints[19]: 38
+ints[20]: 40
+ints[21]: 42
+ints[22]: 44
+ints[23]: 46
+ints[24]: 48
+ints[25]: 539042339
+ints[26]: 606414375
+ints[27]: 673786411
+ints[28]: 741158447
+ints[29]: 808530483
+ints[30]: 875902519
+ints[31]: 943274555
+ints[32]: 1010646591
+ints[33]: 1078018626
+ints[34]: 68
+ints[35]: 70
+ints[36]: 72
+ints[37]: 74
+ints[38]: 76
+ints[39]: 78
+ints[40]: 80
+ints[41]: 82
+chars[0]:  
+chars[1]: !
+chars[2]: "
+chars[3]: #
+chars[4]: $
+chars[5]: %
+chars[6]: &
+chars[7]: '
+chars[8]: (
+chars[9]: )
+chars[10]: *
+chars[11]: +
+chars[12]: ,
+chars[13]: -
+chars[14]: .
+chars[15]: /
+chars[16]: 0
+chars[17]: 1
+chars[18]: 2
+chars[19]: 3
+chars[20]: 4
+chars[21]: 5
+chars[22]: 6
+chars[23]: 7
+chars[24]: 8
+chars[25]: 9
+chars[26]: :
+chars[27]: ;
+chars[28]: <
+chars[29]: =
+chars[30]: >
+chars[31]: ?
+chars[32]: @
+chars[33]: A
+chars[34]: B
+freeing ints...
+chars[0]:  
+chars[1]: !
+chars[2]: "
+chars[3]: #
+chars[4]: $
+chars[5]: %
+chars[6]: &
+chars[7]: '
+chars[8]: (
+chars[9]: )
+chars[10]: *
+chars[11]: +
+chars[12]: ,
+chars[13]: -
+chars[14]: .
+chars[15]: /
+chars[16]: 0
+chars[17]: 1
+chars[18]: 2
+chars[19]: 3
+chars[20]: 4
+chars[21]: 5
+chars[22]: 6
+chars[23]: 7
+chars[24]: 8
+chars[25]: 9
+chars[26]: :
+chars[27]: ;
+chars[28]: <
+chars[29]: =
+chars[30]: >
+chars[31]: ?
+chars[32]: @
+chars[33]: A
+chars[34]: B
+freeing chars...
+Kernel: System shutdown started...
+VFS: Entering forceful unmount of all filesystems.
+VFS: Forcefully unmounting volume [arkimedes]
+Kernel: System shutdown complete, powering off
+
+>>> Remote disconnect
+>>> Waiting for incoming connection on socket 'fyams.socket' ...

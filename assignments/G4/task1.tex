@@ -5,6 +5,47 @@
 %
 
 \section{TLB Exception Handling}
+This section describes the implementation of handling of exceptions caused by
+misses in the translation lookaside buffer (TLB). These occur when a page cannot
+be found in the TLB, and they are handled by replacing a random entry in the TLB
+with the entry that was not found. A more efficient solution would be to
+implement a FIFO replacement strategy, rather than a random replacement
+strategy, that is, a strategy that replaces the oldest existing entry in
+the TLB with the new requested page entry.
+
+\subsection{TLB modified exception}
+The TLB modified exception is raised when a memory store operation is requesting
+a page whose dirty bit is 0 which means that the page is read-only. If this
+occurs in user mode, it is treated as an access violation, an error messsage is
+printed and the thread is ended by calling the \verb|thread_finish| function
+which frees the memory of the thread and sets its state to dying. If the
+thread is running in kernel mode, a kernel panic will occur. The code for the
+exception handler is shown in figure \ref{code:tlb_modified_handler} below.
+
+\codefig{tlb_modified_handler}{vm/tlb.c}{74}{86}
+{Code excerpt showing TLB modified exception handler function.}
+
+\subsection{TLB load and store exception handling}
+A TLB load exception is caused by a memory load operation that requires a page
+entry which is not present in the TLB or is marked as invalid. This is handled
+by the function \verb|tlb_load_exception|. Likewise, a TLB store exception
+occurs when a memory store operation requires a missing page entry or the entry
+in the TLB is marked as invalid. This is handled by the function
+\verb|tlb_store_exception|. A new function \verb|tlb_load_store| is defined and
+called from both of the two mentioned exception handlers, since they are handled
+in the same way, and if this function returns a non-zero value, a kernel panic
+happens since this means that the page entry could not be found or that is was
+invalid. The code for these two exception handler functions is pretty trivial, 
+and it is shown in figure \ref{code:tlb_load_handler} and
+\ref{code:tlb_store_handler}.
+
+\codefig{tlb_load_handler}{vm/tlb.c}{88}{92}
+{Code excerpt showing TLB load exception handler function.}
+
+\codefig{tlb_store_handler}{vm/tlb.c}{94}{98}
+{Code excerpt showing TLB store exception handler function.}
+
+
 \subsection{tlb\_load\_store}
 \codefig{tlb_load_store}{vm/tlb.c}{46}{46}
     {Prototype of function behind \code{tlb\_load\_exception} and
@@ -24,7 +65,9 @@ that the pointer to the pagetable is found and put into \code{*p\_table}. The
 pointer to the pagetables, ie. entries, is then put into \code{*p\_entries}.
 
 \codefig{even_odd}{vm/tlb.c}{57}{57}
-    {Declaration of odd and bitwise magic happens.}
+    {Correct page found}
+MIPS TLB's maps two consequtive pages, odd and even, the code above gets the
+correct page.
 
 \codefig{tlb_ls_for}{vm/tlb.c}{59}{70}
     {A loop through \code{p\_entries} and possibly some declarations.}
@@ -32,11 +75,37 @@ A for loop that goes through the entries on the current thread. Then if the
 current vpn, found through \code{p\_entries[i]} equals to the \code{badvpn2}
 found before and the register returned are bigger than 0, then the current entry's ASID,
 \code{p\_entries[i].ASID}, is set to \code{state.asid}, where state is the
-exception state. The current entry is then probed and if the result is less than
+exception state. The current entry is then probed, ie. checks VPN2, dummy1 and
+ASID fields and returns index if a match is found, and if the result is less than
 zero then a call to \code{\_tlb\_write\_random(...)} is issued, otherwise
 \code{\_tlb\_write(...)} is called. After this 0 is returned. \\
 If the first if-clause is not accepted then \code{tlb\_load\_store\_exception}
 returns 1.
+
+\subsection{Other modifications}
+As noted in the last comment in \file{kernel/interrupt.c}, the call to the
+function \verb|tlb_fill| is not needed after implementing the handling of
+exceptions caused by TLB misses. The ASID field in the \verb|tlb_entry_t| struct
+must still be set, however, to match the thread id of the current thread. This
+is the address space identifier and by setting it to the thread id, it is
+ensured that the page entry is valid for the current thread. Thus, the call to
+\verb|_tlb_set_asid| in the original \verb|tlb_fill| function, is added to the
+end of the \verb|interrupt_handle| function in \file{kernel/interrupt.c},
+replacing \verb|tlb_fill|. This is shown in the code excerpt in figure
+\ref{code:interrupt_asid}.
+
+\codefig{interrupt_asid}{kernel/interrupt.c}{203}{204}
+{Code excerpt showing the call to set ASID in TLB.}
+
+This leaves out the call to \verb|_tlb_write|, which was called from
+\verb|tlb_fill|. This call filled the TLB with pages and thereby limiting the
+available memory to the size of the TLB. By implementing the exception handling,
+the pages are first inserted as needed and newly requested pages replace other
+pages in the TLB when they are not available. Thus, the TLB is filled
+automatically as needed. Similarly, \verb|tlb_fill| is no longer needed when
+creating a new process so the two calls in \file{proc/process.c} are removed.
+
+
 \subsection{Tests}
 \codefig{tlbtests}{tests/tlb_test.c}{1}{36}{TLB test file}
 

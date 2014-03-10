@@ -1,0 +1,37 @@
+Using configuration file ./yams.conf.
+YAMS - Yet Another Machine Simulator 1.4.1 
+
+Copyright (C) 2002-2010 Juha Aatrokoski, Timo Lilja, Leena Salmela,
+  Teemu Takanen, Aleksi Virtanen
+
+Yams comes with ABSOLUTELY NO WARRANTY; This is free software,
+and you are welcome to redistribute it under certain conditions;
+see the file COPYING for details.
+
+Reading configuration from './yams.conf'
+Connecting to TTY at Unix Domain Socket 'fyams.socket'
+TTY connection established
+Starting on a little-endian host.
+Simulating a big-endian machine.
+Starting the asynchronous input subsystem.
+Simulated hardware:
+ 1 CPU(s) with virtual clock rate 1000000 Hz
+ 65536 kilobytes of main memory (16384 x 4096)
+ 6 other virtual device(s): 
+   - 'Terminal' Type: #00000201 IOBASE: #b000802c IRQ: 4
+   - '1MB-disk' Type: #00000301 IOBASE: #b0008018 IRQ: 3
+   - 'CPUINFO ' Type: #00000c00 IOBASE: #b0008010 IRQ: 0
+   - 'MEMINFO ' Type: #00000101 IOBASE: #b000800c IRQ: NONE
+   - 'SYS-RTC ' Type: #00000102 IOBASE: #b0008004 IRQ: NONE
+   - 'SHUTDOWN' Type: #00000103 IOBASE: #b0008000 IRQ: NONE
+
+Loading image...
+ELF: entrypoint=#80010000
+ELF: load: offset=#00001000 vaddr=#80010000 size=#0000bbe4 memsize=#00032ca0
+Kernel boot arguments are: "initprog=[arkimedes]mem_test"
+Booting kernel "buenos" at address #80010000
+YAMS running...Shutting down by software request
+
+    Running time: 0.20 s
+    Actual performance (average): 17313 kHz
+    Simulated second length (average): 0.06 s
