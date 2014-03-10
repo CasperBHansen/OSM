@@ -11,13 +11,13 @@ int main() {
     printf("Initializing heap..\n");
     heap_init();
 
-    printf("Heap size is %d bytes\n", HEAP_SIZE);
+    printf("Heap size is %d bytes\n", 300);
 
-    printf("Allocating 200 bytes of heap space..\n");
-    buffer = malloc(sizeof(char) * 200);
+    printf("Allocating 400 bytes of heap space..\n");
+    buffer = malloc(sizeof(char) * 400);
 
     printf("Setting allocated memory to 'A' bytes..\n");
-    memset(buffer, (int) 'A', 200);
+    memset(buffer, (int) 'A', 400);
 
     printf("Freeing memory..\n");
     free(buffer);
