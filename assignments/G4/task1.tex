@@ -5,7 +5,27 @@
 %
 
 \section{TLB Exception Handling}
-...
+This section describes the implementation of handling of exceptions caused by
+misses in the translation lookaside buffer (TLB). These occur when a page cannot
+be found in the TLB, and they are handled by replacing a random entry in the TLB
+with the entry that was not found. A more efficient solution would be to
+implement a FIFO replacement strategy, rather than a random replacement
+strategy, that is, a strategy that replaces the oldest existing entry in
+the TLB with the new requested page entry.
+
+
+\subsection{TLB modified exception}
+The TLB modified exception is raised when a memory store operation is requesting
+a page whose dirty bit is 0 which means that the page is read-only. If this
+occurs in user mode, it is treated as an access violation, an error messsage is
+printed and the thread is ended by calling the \verb|thread_finish| function
+which frees the memory of the thread and sets its state to dying. If the
+thread is running in kernel mode, a kernel panic will occur. The code for the
+exception handler is shown in listing \ref{code:tlb_modified_handler} below.
+
+\codefig{tlb_modified_handler}{vm/tlb.c}{74}{86}
+{Code excerpt showing TLB modiefied exception handler function.}
+
 
 \subsection{Tests}
 ...
