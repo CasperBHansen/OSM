@@ -5,7 +5,36 @@
 %
 
 \section{TLB Exception Handling}
-...
+\codefig{tlb_load_store}{vm/tlb.c}{46}{46}
+    {Prototype of function behind \code{tlb\_load\_exception} and
+                          \code{tlb\_store\_exception}.}
 
+\codefig{badvpn2}{vm/tlb.c}{48}{50}
+    {...}
+A \code{tlb\_exception\_state\_t} is created and the current state is loaded
+into it, the pagenumber is also saved to \code{unint32\_t badvpn2}. vpn2
+basically means two pages, ie. 8192 bytes or 2 KiB.
+
+
+\codefig{thread}{vm/tlb.c}{53}{55}
+    {...}
+The pointer to the current thread entry is put into \code{*t\_table}, through
+that the pointer to the pagetable is found and put into \code{*p\_table}. The
+pointer to the pagetables, ie. entries, is then put into \code{*p\_entries}.
+
+\codefig{even_odd}{vm/tlb.c}{57}{57}
+    {...}
+
+\codefig{tlb_ls_for}{vm/tlb.c}{59}{70}
+    {...}
+A for loop that goes through the entries on the current thread. Then if the
+current vpn, found through \code{p\_entries[i]} equals to the \code{badvpn2}
+found before and the register returned are bigger than 0, then the current entry's ASID,
+\code{p\_entries[i].ASID}, is set to \code{state.asid}, where state is the
+exception state. The current entry is then probed and if the result is less than
+zero then a call to \code{\_tlb\_write\_random(...)} is issued, otherwise
+\code{\_tlb\_write(...)} is called. After this 0 is returned. \\
+If the first if-clause is not accepted then \code{tlb\_load\_store\_exception}
+returns 1.
 \subsection{Tests}
 ...
