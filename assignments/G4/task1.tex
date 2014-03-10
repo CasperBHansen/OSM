@@ -81,6 +81,31 @@ zero then a call to \code{\_tlb\_write\_random(...)} is issued, otherwise
 \code{\_tlb\_write(...)} is called. After this 0 is returned. \\
 If the first if-clause is not accepted then \code{tlb\_load\_store\_exception}
 returns 1.
+
+\subsection{Other modifications}
+As noted in the last comment in \file{kernel/interrupt.c}, the call to the
+function \verb|tlb_fill| is not needed after implementing the handling of
+exceptions caused by TLB misses. The ASID field in the \verb|tlb_entry_t| struct
+must still be set, however, to match the thread id of the current thread. This
+is the address space identifier and by setting it to the thread id, it is
+ensured that the page entry is valid for the current thread. Thus, the call to
+\verb|_tlb_set_asid| in the original \verb|tlb_fill| function, is added to the
+end of the \verb|interrupt_handle| function in \file{kernel/interrupt.c},
+replacing \verb|tlb_fill|. This is shown in the code excerpt in figure
+\ref{code:interrupt_asid}.
+
+\codefig{interrupt_asid}{kernel/interrupt.c}{203}{204}
+{Code excerpt showing the call to set ASID in TLB.}
+
+This leaves out the call to \verb|_tlb_write|, which was called from
+\verb|tlb_fill|. This call filled the TLB with pages and thereby limiting the
+available memory to the size of the TLB. By implementing the exception handling,
+the pages are first inserted as needed and newly requested pages replace other
+pages in the TLB when they are not available. Thus, the TLB is filled
+automatically as needed. Similarly, \verb|tlb_fill| is no longer needed when
+creating a new process so the two calls in \file{proc/process.c} are removed.
+
+
 \subsection{Tests}
 \codefig{tlbtests}{tests/tlb_test.c}{1}{36}{TLB test file}
 
