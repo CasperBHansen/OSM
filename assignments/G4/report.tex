@@ -5,7 +5,6 @@
 \usepackage{color}              % so purrty
 \usepackage{float}              % put things exactly where I tell you!
 \usepackage[utf8]{inputenc}     % i can has UTF-8
-\usepackage[T1]{fontenc}        % black magic, Volemort was here
 \usepackage{listings}           % pretty-colored code excerpts
 \usepackage{multicol}           % such column.. very multi.. wow!
 
@@ -14,23 +13,11 @@
 \definecolor{identifier}{rgb}   {0.00, 0.00, 0.00}
 \definecolor{string}{rgb}       {0.50, 0.50, 0.50}
 
-\setlength\parindent{0pt}       % Fuck indentations
-
 \newcommand{\code}[1]{{\tt #1}}
 \newcommand{\file}[1]{{\tt #1}}
 \newcommand{\imp}{\rightarrow}
 
 \newcommand{\figref}[1]{(see figure~\ref{#1})}
-
-% usage: \codefig{label, file, firstline, lastline, description}
-\newcommand{\codefig}[5]
-{
-\begin{figure}[H]
-    \lstinputlisting[firstnumber=#3,firstline=#3,lastline=#4]{../../../src/#2}
-    \caption{#5}
-    \label{code:#1}
-\end{figure}
-}
 
 \lstset
 {
@@ -46,12 +33,11 @@
     keywordstyle=\color{keyword},
     identifierstyle=\color{identifier},
     stringstyle=\color{string},
-    showstringspaces=fals
 }
 
 \title
 {
-    {\Large Group Assignment 4} \\
+    {\Large Group Assignment 2} \\
     Operating Systems and Multiprogramming
 }
 
@@ -82,7 +68,7 @@
 \thispagestyle{empty}
 \begin{multicols}{2}
     \begin{abstract}
-    \input{abstract}
+    \input{abstract.tex}
     \end{abstract}
     \vfill\columnbreak
     \tableofcontents\vfill
@@ -90,7 +76,6 @@
 \newpage
 
 \include{task1}
-\include{task2}
 \include{task2}
 
 \end{document}
