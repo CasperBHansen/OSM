@@ -5,4 +5,77 @@
 %
 
 \section{Dynamic Memory}
+In order to support dynamic memory for user processes, we must make a few
+adjustments to our current implementation. We must add a pointer to the end of
+the heap to the process control block, the extension of this structure is
+shown below.
+
+\codefig{revised-pcb}{proc/process.h}{64}{83}
+{Code excerpt showing the revised \code{process\_control\_block\_t} structure.}
+
+Note that \code{heap\_ptr\_t} is declared as \code{void} on line 43 of the
+same file.
+
+After a few debug print outs we found that the stack pointer grows downward,
+and thus starts out in high address space. Therefore, we would like our heap
+to grow in the opposite direction, and from low address space. We found that
+the lowest possible address from which we can initialize our heap pointer from
+is immediately following the static data written from the executable into
+memory on lines 125--137 in \file{proc/process.c}. So, we calculated the
+address following that those segments, and initialized our heap pointer to
+that address.
+
+\codefig{heap_end-init}{proc/process.c}{194}{194}
+{Code excerpt showing the initialization of \code{heap\_end}.}
+
+\subsection{Implementation of \code{syscall\_memlimit}}
+We extract the argument out of CPU register \code{A1} on line 81, and get the
+current heap pointer from the process on line 82. The assignment required that
+if the argument given is \code{NULL} then we simply return the current heap
+pointer. This is done on lines 84--87. Also, the assignment specifically says
+that we should not handle decreasing the heap, since \code{vm\_unmap} hasn't
+been implemented yet, and that functionality would rely on its implementation.
+Therefore, on line 90 we issue a kernel panic if it is the case that
+\code{syscall\_memlimit} should actually decrease the heap.
+
+Now that the preliminary checks have been done, we can proceed to allocate the
+necessary pages. We do this by first calculating how many pages are needed to
+fulfill the request on line 94. We then increase the current heap pointer by
+the required amount on line 101. And then on lines 103--109, as the comment
+suggests, we have shamelessly stolen much of it from how we saw virtual
+memory was allocated in \file{proc/process.c}, and adapted it to suit our
+needs. It should allocate at least the amount of pages needed to fulfill the
+requested memory, and from our tests it seems to do so.
+
+Lastly, we update the heap pointer for the process and return its virtual
+memory address on lines 113--114.
+
+\codefig{heap_end-init}{proc/syscall.c}{80}{115}
+{Code excerpt showing the \code{syscall\_memlimit} implementation.}
+
+\subsection{Implementation of \code{malloc}}
+Most of the fixed heap size implementation could be reused. Only slight
+adjustments were made in order to use the actual heap. First and foremost, we
+commented out any references to the fixed size heap, which obviously gave us a
+lot of compiler errors, but then we knew which parts of the algorithms were
+dependent on it. Namely, the \code{heap\_init} function, which set the free
+list values. These were altered to reflect that we were now referencing the
+actual heap and the size would initially be zero.
+
+\codefig{heap_init}{tests/lib.c}{743}{748}
+{Code excerpt showing the revised \code{heap\_init} function.}
+
+Now we will have to maintain the size and next pointer whenever we change the
+heap. For already allocated memory this would still be handled by the loop in
+\code{malloc} which looks for available free blocks. If no free blocks exist
+we must allocate it and update the data accordingly. When exiting the
+mentioned loop, the pointer \code{block} points to the last element in the
+list; this is the pointer we wish to allocate memory for and return the
+address of the data, which in this implementation using the block structure
+would be stored at an offset of \code{size\_t} from the \code{block} address.
+
+\codefig{malloc}{tests/lib.c}{791}{799}
+{Code excerpt showing the extension of \code{malloc}.}
+
+\subsection{Tests}
 ...

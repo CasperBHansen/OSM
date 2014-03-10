@@ -19,6 +19,16 @@
 
 \newcommand{\figref}[1]{(see figure~\ref{#1})}
 
+% usage: \codefig{label}{file}{firstline}{lastline}{description}
+\newcommand{\codefig}[5]
+{
+\begin{figure}[H]
+    \lstinputlisting[firstnumber=#3,firstline=#3,lastline=#4]{../../src/#2}
+    \caption{#5}
+    \label{code:#1}
+\end{figure}
+}
+
 \lstset
 {
     language=C++,
