@@ -78,4 +78,9 @@ would be stored at an offset of \code{size\_t} from the \code{block} address.
 {Code excerpt showing the extension of \code{malloc}.}
 
 \subsection{Tests}
-...
+Our tests of \code{malloc} show a faulty implementation, since the results
+have been unreliable. For simple allocations it works fine, but as the output
+log \file{logs/mem\_test.log} shows, some data entries into the \code{ints}
+array of the \file{tests/mem\_list} program are garbage values. We did not
+find the erroneous code that causes this.
+

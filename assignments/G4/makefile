@@ -1,6 +1,6 @@
 # package macros
 PACK_NAME=hansen_hansen_hovgaard
-PACK_FILES=makefile {makefile,*.{tex,pdf}} src
+PACK_FILES=makefile {makefile,*.{tex,pdf}} src logs
 
 all:
 	pdflatex report.tex
