@@ -50,14 +50,6 @@
 #include "vm/vm.h"
 
 /**
- * Handle SYSCALL_EXEC syscall.
- */
-void handle_syscall_exec(context_t * user_context) {
-    const char * executable = (const char *)user_context->cpu_regs[MIPS_REGISTER_A1];
-    user_context->cpu_regs[MIPS_REGISTER_V0] = process_spawn(executable);
-}
-
-/**
  * Handle SYSCALL_EXIT syscall.
  */
 void handle_syscall_exit(context_t * user_context) {
@@ -67,13 +59,6 @@ void handle_syscall_exit(context_t * user_context) {
     (pid == PROCESS_STARTUP_PID) ? halt_kernel() : process_finish(retval);
 }
 
-/**
- * Handle SYSCALL_JOIN syscall.
- */
-void handle_syscall_join(context_t * user_context) {
-    const uint32_t pid = (const int) user_context->cpu_regs[MIPS_REGISTER_A1];
-    user_context->cpu_regs[MIPS_REGISTER_V0] = process_join(pid);
-}
 
 /**
  * Handle SYSCALL_MEMLIMIT syscall.
@@ -155,24 +140,6 @@ void handle_syscall_write(context_t *user_context) {
         user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
     }
 }
-
-/*
- * Handle SYSCALL_SEM_DESTROY syscall.
- */
-void handle_syscall_sem_destroy(context_t * user_context) {
-    usr_sem_t * sem = (usr_sem_t *)user_context->cpu_regs[MIPS_REGISTER_A1];
-    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_destroy(sem);
-}
-
-/*
- * Handle SYSCALL_SEM_OPEN syscall.
- */
-void handle_syscall_sem_open(context_t * user_context) {
-    const char * name = (const char *)user_context->cpu_regs[MIPS_REGISTER_A1];
-    const int value = (const int)user_context->cpu_regs[MIPS_REGISTER_A2];
-    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_open(name, value);
-}
-
 
 
 /**
@@ -279,7 +246,7 @@ void syscall_handle(context_t *user_context)
         V0 = handle_syscall_create((char *) A1, A2);
         break;
     case SYSCALL_EXEC:
-        handle_syscall_exec(user_context);
+        V0 = process_spawn((const char *) A1);
         break;
     case SYSCALL_EXIT:
         handle_syscall_exit(user_context);
@@ -288,7 +255,7 @@ void syscall_handle(context_t *user_context)
         halt_kernel();
         break;
     case SYSCALL_JOIN:
-        handle_syscall_join(user_context);
+        V0 = process_join((const int) A1);
         break;
     case SYSCALL_MEMLIMIT:
         handle_syscall_memlimit(user_context);
@@ -300,10 +267,10 @@ void syscall_handle(context_t *user_context)
         handle_syscall_read(user_context);
         break;
     case SYSCALL_SEM_DESTROY:
-        handle_syscall_sem_destroy(user_context);
+        V0 = semaphore_userland_destroy((usr_sem_t *) A1);
         break;
     case SYSCALL_SEM_OPEN:
-        handle_syscall_sem_open(user_context);
+        V0 = (uint32_t) semaphore_userland_open((char *) A1, (int) A2);
         break;
     case SYSCALL_SEM_PROCURE:
         V0 = semaphore_userland_procure((usr_sem_t *) A1);
