@@ -173,22 +173,6 @@ void handle_syscall_sem_open(context_t * user_context) {
     user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_open(name, value);
 }
 
-/*
- * Handle SYSCALL_SEM_PROCURE syscall.
- */
-void handle_syscall_sem_procure(context_t * user_context) {
-    usr_sem_t * sem = (usr_sem_t *)user_context->cpu_regs[MIPS_REGISTER_A1];
-    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_procure(sem);
-}
-
-/*
- * Handle SYSCALL_SEM_VACATE syscall.
- */
-void handle_syscall_sem_vacate(context_t * user_context) {
-    usr_sem_t * sem = (usr_sem_t *)user_context->cpu_regs[MIPS_REGISTER_A1];
-    user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_vacate(sem);
-}
-
 
 
 /**
@@ -200,9 +184,30 @@ void handle_syscall_sem_vacate(context_t * user_context) {
  * Returns: 0 on success or a negative integer on error.
  */
 int handle_syscall_close(int filehandle) {
-                                    // TODO: may be redundant
-    if (filehandle < 2) return -1;  // not a valid closeable filehandle
-    else return vfs_close(filehandle - 2); // again avoiding std{in,out,err}
+    if (filehandle < 2) return -1;  // not a valid closeable filehandle   TODO: may be redundant
+
+    if (process_remove_open_file(filehandle) == 0)
+        // avoiding std{in,out,err} (see handle_syscall_open)
+        return vfs_close(filehandle - 2);
+
+    kprintf("Error: file handle %d is not open in this process\n", filehandle);
+    return -1;
+}
+
+
+/**
+ * Handle SYSCALL_CREATE syscall.
+ *
+ * Effects: Creates a new file of the given size with the name specified by
+ *          pathname.
+ *
+ * Returns: 0 on success or a negative integer on error.
+ */
+int handle_syscall_create(const char *pathname, int size) {
+    pathname = pathname;
+    size = size;
+
+    return 0;
 }
 
 
@@ -217,21 +222,27 @@ int handle_syscall_close(int filehandle) {
  *          file opened) on success or a negative integer on error.
  */
 int handle_syscall_open(const char *pathname) {
-    // Check pathname is not too long, as defined in fs/vfs.h.
+    // Check pathname is not too long, as defined in fs/vfs.h.          TODO: may be redundant
     if (strlen(pathname) > VFS_PATH_LENGTH) {
         kprintf("Filepath exceeds the maximum length of %d.\n\
                  The file %s was not opened.\n", VFS_PATH_LENGTH, pathname);
         return -1;
     }
 
-    // Check if vfs_open returns a valid non-negative filehandle, i.e. >= 1,
+    // Check if vfs_open returns a valid non-negative file handle, i.e. >= 1,
     // and return this plus 2 if it does to avoid conflicting with stdin (0),
     // stdout (1) and stderr (2).
     openfile_t handle = vfs_open((char *) pathname);
     if (handle < 1)
         return -1;  // error opening file in filesystem
-    else
+
+    if (process_add_open_file(handle + 2) == 0)  // add to PCB array of open files
         return handle + 2;
+    else {
+        // no room for another open file in process PCB
+        vfs_close(handle);
+        return -1;
+    }
 }
 
 
@@ -245,8 +256,8 @@ int handle_syscall_open(const char *pathname) {
 void syscall_handle(context_t *user_context)
 {
     int A1 = user_context->cpu_regs[MIPS_REGISTER_A1];
-    /*int A2 = user_context->cpu_regs[MIPS_REGISTER_A2];
-    int A3 = user_context->cpu_regs[MIPS_REGISTER_A3];*/
+    int A2 = user_context->cpu_regs[MIPS_REGISTER_A2];
+    //int A3 = user_context->cpu_regs[MIPS_REGISTER_A3];
 
     // using define since this is going to be assigned values
     #define V0 (user_context->cpu_regs[MIPS_REGISTER_V0])
@@ -263,6 +274,9 @@ void syscall_handle(context_t *user_context)
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
     case SYSCALL_CLOSE:
         V0 = handle_syscall_close(A1);
+        break;
+    case SYSCALL_CREATE:
+        V0 = handle_syscall_create((char *) A1, A2);
         break;
     case SYSCALL_EXEC:
         handle_syscall_exec(user_context);
@@ -292,10 +306,10 @@ void syscall_handle(context_t *user_context)
         handle_syscall_sem_open(user_context);
         break;
     case SYSCALL_SEM_PROCURE:
-        handle_syscall_sem_procure(user_context);
+        V0 = semaphore_userland_procure((usr_sem_t *) A1);
         break;
     case SYSCALL_SEM_VACATE:
-        handle_syscall_sem_vacate(user_context);
+        V0 = semaphore_userland_vacate((usr_sem_t *) A1);
         break;
     case SYSCALL_WRITE:
         handle_syscall_write(user_context);

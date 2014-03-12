@@ -51,6 +51,7 @@ typedef void heap_ptr_t;
 #define PROCESS_STARTUP_PID 0
 
 #define PROCESS_NAME_LENGTH 128
+#define PROCESS_MAX_OPEN_FILES 8
 
 /* Enumeration type of process states. */
 typedef enum {
@@ -80,6 +81,9 @@ typedef struct {
 
     // heap pointer
     heap_ptr_t *heap_end;
+
+    // open files
+    int open_files[PROCESS_MAX_OPEN_FILES];
 } process_control_block_t;
 
 
@@ -113,5 +117,13 @@ process_control_block_t *process_get_process_entry(process_id_t pid);
 
 /* Return an available pid. */
 process_id_t process_get_available_pid();
+
+/* Add an int filehandle to the PCB of the current process.
+ * Returns 0 on success and a negative integer on error. */
+int process_add_open_file(int handle);
+
+/* Remove an int filehandle from the PCB of the current process.
+ * Returns 0 on success and a negative integer on error. */
+int process_remove_open_file(int handle);
 
 #endif

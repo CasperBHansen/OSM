@@ -39,5 +39,10 @@ int main()
            "Filehandle %d should be closeable. syscall_close(%d) returns %d.",
            handle2, handle2, close_ret);
 
+    /*close_ret = syscall_close(42); // not in process PCB
+    assert(close_ret != 0,
+           "File handle 42 should not be open in current process. "
+           "syscall_close(42) returns %d.", close_ret);*/
+
     return 0;
 }

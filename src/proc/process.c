@@ -193,7 +193,15 @@ void process_start(uint32_t pid)
     // heap --- ours grow up, because the stack already grows down.
     process_table[pid].heap_end = (void *)(elf.rw_vaddr + elf.rw_size);
     process_table[pid].state = PROCESS_RUNNING;
-    
+
+    // Initialize open_files array to -1 in all entries.
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++)
+        process_table[pid].open_files[i] = -1;
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+
     thread_goto_userland(&user_context);
 
     KERNEL_PANIC("thread_goto_userland failed.");
@@ -332,6 +340,54 @@ process_id_t process_get_available_pid() {
     for (process_id_t pid = 0; pid < PROCESS_MAX_PROCESSES; ++pid)
         if (process_table[pid].state == PROCESS_DEAD) return pid;
     return -1; // could also wait for one to become available?
+}
+
+int process_add_open_file(int handle) {
+    process_control_block_t *pcb = process_get_current_process_entry();
+
+    interrupt_status_t intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+
+    int i;
+    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
+        if (pcb->open_files[i] == -1) {
+            pcb->open_files[i] = handle;
+
+            spinlock_release(&process_table_slock);
+            _interrupt_set_state(intr_status);
+
+            return 0;
+        }
+    }
+
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+
+    return -1;  // PCB open files array is full
+}
+
+int process_remove_open_file(int handle) {
+    process_control_block_t *pcb = process_get_current_process_entry();
+
+    interrupt_status_t intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+
+    int i;
+    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
+        if (pcb->open_files[i] == handle) {
+            pcb->open_files[i] = -1;
+
+            spinlock_release(&process_table_slock);
+            _interrupt_set_state(intr_status);
+
+            return 0;
+        }
+    }
+
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+
+    return -1;  // file handle not open by current process
 }
 
 /** @} */
