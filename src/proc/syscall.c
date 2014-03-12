@@ -33,20 +33,21 @@
  * $Id: syscall.c,v 1.3 2004/01/13 11:10:05 ttakanen Exp $
  *
  */
-#include "kernel/cswitch.h"
-#include "kernel/semaphore.h"
-#include "kernel/interrupt.h"
-#include "proc/syscall.h"
-#include "proc/process.h"
-#include "kernel/halt.h"
-#include "kernel/panic.h"
-#include "lib/libc.h"
-#include "kernel/assert.h"
 #include "drivers/device.h"
 #include "drivers/gcd.h"
+#include "fs/vfs.h"
+#include "kernel/assert.h"
+#include "kernel/cswitch.h"
+#include "kernel/halt.h"
+#include "kernel/interrupt.h"
+#include "kernel/panic.h"
+#include "kernel/semaphore.h"
+#include "lib/libc.h"
+#include "proc/process.h"
 #include "proc/semaphore.h"
-#include "vm/vm.h"
+#include "proc/syscall.h"
 #include "vm/pagepool.h"
+#include "vm/vm.h"
 
 /**
  * Handle SYSCALL_EXEC syscall.
@@ -113,6 +114,7 @@ void handle_syscall_memlimit(context_t *user_context) {
     process_get_current_process_entry()->heap_end = (heap_ptr_t *)heap_end;
     user_context->cpu_regs[MIPS_REGISTER_V0] = heap_end;
 }
+
 
 /**
  * Handle SYSCALL_READ syscall.
@@ -187,6 +189,52 @@ void handle_syscall_sem_vacate(context_t * user_context) {
     user_context->cpu_regs[MIPS_REGISTER_V0] = (uint32_t)semaphore_userland_vacate(sem);
 }
 
+
+
+/**
+ * Handle SYSCALL_CLOSE syscall.
+ *
+ * Effects: Invalidates the file handle passed as parameter. Hereafter the
+ *          handle cannot be used in file operations any more.
+ *
+ * Returns: 0 on success or a negative integer on error.
+ */
+int handle_syscall_close(int filehandle) {
+                                    // TODO: may be redundant
+    if (filehandle < 2) return -1;  // not a valid closeable filehandle
+    else return vfs_close(filehandle - 2); // again avoiding std{in,out,err}
+}
+
+
+/**
+ * Handle SYSCALL_OPEN syscall.
+ *
+ * Effects: Prepares the file referenced by pathname for reading and writing. A
+ *          path name includes a volume name and a file name (for instance
+ *          [root]a.out).
+ *
+ * Returns: A positive integer greater than 2 (serving as a file handle to the
+ *          file opened) on success or a negative integer on error.
+ */
+int handle_syscall_open(const char *pathname) {
+    // Check pathname is not too long, as defined in fs/vfs.h.
+    if (strlen(pathname) > VFS_PATH_LENGTH) {
+        kprintf("Filepath exceeds the maximum length of %d.\n\
+                 The file %s was not opened.\n", VFS_PATH_LENGTH, pathname);
+        return -1;
+    }
+
+    // Check if vfs_open returns a valid non-negative filehandle, i.e. >= 1,
+    // and return this plus 2 if it does to avoid conflicting with stdin (0),
+    // stdout (1) and stderr (2).
+    openfile_t handle = vfs_open((char *) pathname);
+    if (handle < 1)
+        return -1;  // error opening file in filesystem
+    else
+        return handle + 2;
+}
+
+
 /**
  * Handle system calls. Interrupts are enabled when this function is
  * called.
@@ -196,6 +244,13 @@ void handle_syscall_sem_vacate(context_t * user_context) {
  */
 void syscall_handle(context_t *user_context)
 {
+    int A1 = user_context->cpu_regs[MIPS_REGISTER_A1];
+    /*int A2 = user_context->cpu_regs[MIPS_REGISTER_A2];
+    int A3 = user_context->cpu_regs[MIPS_REGISTER_A3];*/
+
+    // using define since this is going to be assigned values
+    #define V0 (user_context->cpu_regs[MIPS_REGISTER_V0])
+
     /* When a syscall is executed in userland, register a0 contains
      * the number of the syscall. Registers a1, a2 and a3 contain the
      * arguments of the syscall. The userland code expects that after
@@ -206,6 +261,9 @@ void syscall_handle(context_t *user_context)
      * restored from user_context.
      */
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
+    case SYSCALL_CLOSE:
+        V0 = handle_syscall_close(A1);
+        break;
     case SYSCALL_EXEC:
         handle_syscall_exec(user_context);
         break;
@@ -220,6 +278,9 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_MEMLIMIT:
         handle_syscall_memlimit(user_context);
+        break;
+    case SYSCALL_OPEN:
+        V0 = handle_syscall_open((char *) A1);
         break;
     case SYSCALL_READ:
         handle_syscall_read(user_context);
