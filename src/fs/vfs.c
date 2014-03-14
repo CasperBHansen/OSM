@@ -769,7 +769,7 @@ int vfs_write(openfile_t file, void *buffer, int datasize)
  *
  * @param size Initial size of the created file.
  *
- * @param VFS_OK on success, negative (VFS_*) on error.
+ * @return VFS_OK on success, negative (VFS_*) on error.
  *
  */
 

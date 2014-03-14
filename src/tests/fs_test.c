@@ -39,10 +39,28 @@ int main()
            "Filehandle %d should be closeable. syscall_close(%d) returns %d.",
            handle2, handle2, close_ret);
 
-    /*close_ret = syscall_close(42); // not in process PCB
+    close_ret = syscall_close(42); // not in process PCB
     assert(close_ret != 0,
            "File handle 42 should not be open in current process. "
-           "syscall_close(42) returns %d.", close_ret);*/
+           "syscall_close(42) returns %d.", close_ret);
+
+    char *new_file = "[arkimedes]new_file";
+    int new_file_size = 8;
+    int create_ret = syscall_create(new_file, new_file_size);
+    assert(create_ret == 0,
+           "New file with pathname %s, of size %d, should be creatable "
+           "(if there is enough space).\nReturn value: %d.",
+           new_file, new_file_size, create_ret);
+
+    /*int delete_ret =*/
+    //syscall_delete(new_file);
+    /*assert(delete_ret == 0,
+           "File with pathname %s should be deletable if the previous "
+           "syscall_create was successful.\nReturn value %d.",
+           new_file, delete_ret);*/
+
+
+    //syscall_halt();
 
     return 0;
 }

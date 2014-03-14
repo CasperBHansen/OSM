@@ -161,20 +161,18 @@ int handle_syscall_close(int filehandle) {
     return -1;
 }
 
-
 /**
- * Handle SYSCALL_CREATE syscall.
+ * Handle SYSCALL_DELETE syscall.
  *
- * Effects: Creates a new file of the given size with the name specified by
- *          pathname.
+ * Effects: Deletes the file referenced by pathname.
+ *          The operation fails if the file is open.
  *
  * Returns: 0 on success or a negative integer on error.
  */
-int handle_syscall_create(const char *pathname, int size) {
-    pathname = pathname;
-    size = size;
-
-    return 0;
+int handle_syscall_delete(char *pathname) {
+    // TODO: fail if file is open,
+    // e.g. save pathname in PCB together with file handle.
+    return vfs_remove(pathname);
 }
 
 
@@ -212,6 +210,23 @@ int handle_syscall_open(const char *pathname) {
     }
 }
 
+/**
+ * Handle SYSCALL_SEEK syscall.
+ *
+ * Effects: Sets the reading or writing position of the open file
+ *          identified by filehandle to the indicated absolute offset
+ *          (in bytes from the beginning).
+ *
+ * Returns: 0 on success or a negative integer on error. Seeking beyond
+ *          the end of the file sets the position to the end and produces
+ *          an error return value.
+ */
+int handle_syscall_seek(int filehandle, int offset) {
+    // TODO: check if file is open in this process.
+
+    return vfs_seek(filehandle, offset);
+}
+
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -243,8 +258,10 @@ void syscall_handle(context_t *user_context)
         V0 = handle_syscall_close(A1);
         break;
     case SYSCALL_CREATE:
-        V0 = handle_syscall_create((char *) A1, A2);
+        V0 = vfs_create((char *) A1, A2);
         break;
+    case SYSCALL_DELETE:
+        V0 = handle_syscall_delete((char *) A1);
     case SYSCALL_EXEC:
         V0 = process_spawn((const char *) A1);
         break;
@@ -265,6 +282,9 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_READ:
         handle_syscall_read(user_context);
+        break;
+    case SYSCALL_SEEK:
+        V0 = handle_syscall_seek(A1, A2);
         break;
     case SYSCALL_SEM_DESTROY:
         V0 = semaphore_userland_destroy((usr_sem_t *) A1);
