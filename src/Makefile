@@ -137,6 +137,7 @@ submit-archive: $(SRC)
 
 clean:	utilclean
 	rm -f $(TARGET) $(OBJS) *~ */*~ buenos.map tags TAGS
+	rm -rf .*.*.swp */.*.*.swp # remove vim swap files
 
 real-clean: clean
 	rm -f $(DEPS)
