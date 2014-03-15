@@ -197,8 +197,10 @@ void process_start(uint32_t pid)
     // Initialize open_files array to -1 in all entries.
     intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
-    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++)
-        process_table[pid].open_files[i] = -1;
+    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
+        file_entry_t *f = &process_table[pid].open_files[i];
+        f->file_handle = -1;
+    }
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
 
@@ -342,7 +344,7 @@ process_id_t process_get_available_pid() {
     return -1; // could also wait for one to become available?
 }
 
-int process_add_open_file(int handle) {
+int process_add_open_file(int handle, char *pathname) {
     process_control_block_t *pcb = process_get_current_process_entry();
 
     interrupt_status_t intr_status = _interrupt_disable();
@@ -350,8 +352,10 @@ int process_add_open_file(int handle) {
 
     int i;
     for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        if (pcb->open_files[i] == -1) {
-            pcb->open_files[i] = handle;
+        if (pcb->open_files[i].file_handle == -1 || pcb->open_files[i].pathname == pathname) {
+            pcb->open_files[i].file_handle = handle;
+            //pcb->open_files[i].pathname = pathname;
+            stringcopy(pcb->open_files[i].pathname, pathname, PATH_LENGTH);
 
             spinlock_release(&process_table_slock);
             _interrupt_set_state(intr_status);
@@ -374,8 +378,9 @@ int process_remove_open_file(int handle) {
 
     int i;
     for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        if (pcb->open_files[i] == handle) {
-            pcb->open_files[i] = -1;
+        if (pcb->open_files[i].file_handle == handle) {
+            pcb->open_files[i].file_handle = -1;
+            memoryset(pcb->open_files[i].pathname, '\0', PATH_LENGTH);
 
             spinlock_release(&process_table_slock);
             _interrupt_set_state(intr_status);
@@ -388,6 +393,33 @@ int process_remove_open_file(int handle) {
     _interrupt_set_state(intr_status);
 
     return -1;  // file handle not open by current process
+}
+
+int process_is_file_open(char *pathname) {
+
+    interrupt_status_t intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+
+    int i, j;
+    for (j = 0; j < PROCESS_MAX_PROCESSES; j++) {
+        process_control_block_t *pcb = &process_table[j];
+        if (pcb->state == PROCESS_DEAD)
+            continue;
+        for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
+            if (stringcmp(pcb->open_files[i].pathname, pathname) == 0) {
+                spinlock_release(&process_table_slock);
+                _interrupt_set_state(intr_status);
+
+                return 1;
+            }
+        }
+    }
+
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+
+    return 0;  // file is not open in any process
+    
 }
 
 /** @} */

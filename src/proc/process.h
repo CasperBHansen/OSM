@@ -53,6 +53,8 @@ typedef void heap_ptr_t;
 #define PROCESS_NAME_LENGTH 128
 #define PROCESS_MAX_OPEN_FILES 8
 
+#define PATH_LENGTH 256
+
 /* Enumeration type of process states. */
 typedef enum {
     PROCESS_NEW,
@@ -61,6 +63,11 @@ typedef enum {
     PROCESS_ZOMBIE,
     PROCESS_DEAD
 } process_state_t;
+
+typedef struct {
+    int file_handle;
+    char pathname[PATH_LENGTH];
+} file_entry_t;
 
 /* Process control block data structure. */
 typedef struct {
@@ -83,7 +90,10 @@ typedef struct {
     heap_ptr_t *heap_end;
 
     // open files
-    int open_files[PROCESS_MAX_OPEN_FILES];
+    file_entry_t open_files[PROCESS_MAX_OPEN_FILES];
+
+    // system wide process open files, should be handled in vfs perhaps.
+    //static file_entry_t file_entries[CONFIG_MAX_OPEN_FILES];
 } process_control_block_t;
 
 
@@ -120,10 +130,13 @@ process_id_t process_get_available_pid();
 
 /* Add an int filehandle to the PCB of the current process.
  * Returns 0 on success and a negative integer on error. */
-int process_add_open_file(int handle);
+int process_add_open_file(int handle, char *pathname);
 
 /* Remove an int filehandle from the PCB of the current process.
  * Returns 0 on success and a negative integer on error. */
 int process_remove_open_file(int handle);
+
+/* Returns non-zero int if pathname file is open, otherwise 0. */
+int process_is_file_open(char *pathname);
 
 #endif

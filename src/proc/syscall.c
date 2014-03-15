@@ -101,46 +101,6 @@ void handle_syscall_memlimit(context_t *user_context) {
 }
 
 
-/**
- * Handle SYSCALL_READ syscall.
- */
-void handle_syscall_read(context_t *user_context) {
-    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
-    uint8_t *buffer  = (uint8_t *) user_context->cpu_regs[MIPS_REGISTER_A2];
-    int length  = user_context->cpu_regs[MIPS_REGISTER_A3];
-
-    if (fhandle == FILEHANDLE_STDIN) {
-        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
-        gcd_t *gcd = (gcd_t *) dev->generic_device;
-        int len = gcd->read(gcd, buffer, length);
-        // buffer[len] = '\0';
-        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
-    } else {
-        // error; reading from other files unimplemented
-        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
-    }
-}
-
-/**
- * Handle SYSCALL_WRITE syscall.
- */
-void handle_syscall_write(context_t *user_context) {
-    uint32_t fhandle = user_context->cpu_regs[MIPS_REGISTER_A1];
-    uint8_t *buffer  = (uint8_t *) user_context->cpu_regs[MIPS_REGISTER_A2];
-    uint32_t length  = user_context->cpu_regs[MIPS_REGISTER_A3];
-
-    if (fhandle == FILEHANDLE_STDOUT) {
-        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
-        gcd_t *gcd = (gcd_t *) dev->generic_device;
-        int len = gcd->write(gcd, buffer, (int) length);
-        // null terminate, TODO: avoid overflow
-        //buffer[len] = '\0';
-        user_context->cpu_regs[MIPS_REGISTER_V0] = len;
-    } else {
-        user_context->cpu_regs[MIPS_REGISTER_V0] = -1;
-    }
-}
-
 
 /**
  * Handle SYSCALL_CLOSE syscall.
@@ -164,15 +124,13 @@ int handle_syscall_close(int filehandle) {
 /**
  * Handle SYSCALL_DELETE syscall.
  *
- * Effects: Deletes the file referenced by pathname.
- *          The operation fails if the file is open.
+ * Effects: Deletes the file referenced by pathname. The operation fails if the
+ *          file is open.
  *
  * Returns: 0 on success or a negative integer on error.
  */
-int handle_syscall_delete(char *pathname) {
-    // TODO: fail if file is open,
-    // e.g. save pathname in PCB together with file handle.
-    return vfs_remove(pathname);
+int handle_syscall_delete(const char *pathname) {
+    return process_is_file_open((char *) pathname) ? -1 : vfs_remove((char *) pathname);
 }
 
 
@@ -201,7 +159,7 @@ int handle_syscall_open(const char *pathname) {
     if (handle < 1)
         return -1;  // error opening file in filesystem
 
-    if (process_add_open_file(handle + 2) == 0)  // add to PCB array of open files
+    if (process_add_open_file(handle + 2, (char *) pathname) == 0)  // add to PCB array of open files
         return handle + 2;
     else {
         // no room for another open file in process PCB
@@ -209,6 +167,28 @@ int handle_syscall_open(const char *pathname) {
         return -1;
     }
 }
+
+
+/**
+ * Handle SYSCALL_READ syscall.
+ *
+ * Effects: Reads at most length bytes from the file identified by filehandle
+ *          (at the current file position) into the specified buffer, advancing
+ *          the file position.
+ *
+ * Returns: The number of bytes actually read (before reaching the end of the
+ *          file) or a negative value when an error occurred.
+ */
+int handle_syscall_read(int filehandle, void *buffer, int length) {
+    if (filehandle == FILEHANDLE_STDIN) {
+        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t *gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->read(gcd, buffer, length);
+        return len;
+    }
+    return vfs_read(filehandle - 2, buffer, length);
+}
+
 
 /**
  * Handle SYSCALL_SEEK syscall.
@@ -222,9 +202,41 @@ int handle_syscall_open(const char *pathname) {
  *          an error return value.
  */
 int handle_syscall_seek(int filehandle, int offset) {
-    // TODO: check if file is open in this process.
 
-    return vfs_seek(filehandle, offset);
+
+    // TODO: check if file is open in this process.
+    if (offset < 0)
+        kprintf("Illegal offset!");
+    
+    char buff;
+    vfs_seek(filehandle - 2, 0);
+
+    int i;
+    for(i = 0; i <= offset; i++)
+        if (! vfs_read(filehandle - 2, &buff, sizeof(char)))
+            return -1;
+
+    return 0;
+}
+
+/**
+ * Handle SYSCALL_WRITE syscall.
+ *
+ * Effects: Writes length bytes from the specified buffer to the open file
+ *          identified by
+ *
+ * Returns: The number of bytes actually written or a negative integer on
+ *          error.
+ */
+int handle_syscall_write(int filehandle, void *buffer, int length) {
+    if (filehandle == FILEHANDLE_STDOUT || filehandle == FILEHANDLE_STDERR) {
+        device_t *dev = device_get(YAMS_TYPECODE_TTY, 0);
+        gcd_t *gcd = (gcd_t *) dev->generic_device;
+        int len = gcd->write(gcd, buffer, (int) length);
+        return len;
+    } else {
+        return vfs_write(filehandle - 2, buffer, length);
+    }
 }
 
 
@@ -239,7 +251,7 @@ void syscall_handle(context_t *user_context)
 {
     int A1 = user_context->cpu_regs[MIPS_REGISTER_A1];
     int A2 = user_context->cpu_regs[MIPS_REGISTER_A2];
-    //int A3 = user_context->cpu_regs[MIPS_REGISTER_A3];
+    int A3 = user_context->cpu_regs[MIPS_REGISTER_A3];
 
     // using define since this is going to be assigned values
     #define V0 (user_context->cpu_regs[MIPS_REGISTER_V0])
@@ -262,6 +274,8 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_DELETE:
         V0 = handle_syscall_delete((char *) A1);
+        //V0 = vfs_remove((char *) A1);
+        break;
     case SYSCALL_EXEC:
         V0 = process_spawn((const char *) A1);
         break;
@@ -281,7 +295,7 @@ void syscall_handle(context_t *user_context)
         V0 = handle_syscall_open((char *) A1);
         break;
     case SYSCALL_READ:
-        handle_syscall_read(user_context);
+        V0 = handle_syscall_read(A1, (void *) A2, A3);
         break;
     case SYSCALL_SEEK:
         V0 = handle_syscall_seek(A1, A2);
@@ -299,7 +313,7 @@ void syscall_handle(context_t *user_context)
         V0 = semaphore_userland_vacate((usr_sem_t *) A1);
         break;
     case SYSCALL_WRITE:
-        handle_syscall_write(user_context);
+        V0 = handle_syscall_write(A1, (void *) A2, A3);
         break;
     default:
         kprintf("%d", user_context->cpu_regs[MIPS_REGISTER_A0]);
