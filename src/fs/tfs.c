@@ -840,11 +840,21 @@ int tfs_file(fs_t *fs, int index, char * buffer)
     tfs_t *tfs = (tfs_t *)fs->internal;
     
     semaphore_P(tfs->lock);
-   
-    if ((int)tfs->buffer_md[index].inode < 0)
-        return VFS_ERROR;
+
+    // TODO: black magic, i.e. make not rely on index + 1
+    //       (there is no hack to be seen here, move along..)
+    uint32_t i;
+    int j = 0;
+    for (i = 0; i < TFS_MAX_FILES; i++) {
+        if (tfs->buffer_md[i].inode > 0) j++;
+        if (j == index + 1) {
+            index = i;
+            break;
+        }
+    }
     
-    stringcopy(buffer, tfs->buffer_md[index].name, VFS_NAME_LENGTH);
+    stringcopy(buffer, tfs->buffer_md[i].name, VFS_NAME_LENGTH);
+    kprintf("%d \t %s\n", tfs->buffer_md[i].inode, buffer);
     
     semaphore_V(tfs->lock);
     

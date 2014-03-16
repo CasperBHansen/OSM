@@ -118,26 +118,19 @@ int cmd_cp(int argc, char** argv)
     int src = syscall_open(argv[1]);
     if (src < 3)
         return -1;
-    
-    int size = 0;
+
+    int size;
     char dummy;
-    int bah;
-    while ( (bah = syscall_read(src, &dummy, 1)) != 0) {
-        printf("dummy: %i, bah = %i\n", dummy, bah);
-        ++size;
-    }
-    
+    for (size = 0; syscall_read(src, &dummy, sizeof(char)); ++size);
+
     char * buffer = (char *)malloc(sizeof(char) * size);
     
     syscall_seek(src, 0);
-    int bytes_read = syscall_read(src, buffer, size);
-    if (bytes_read != size)
-        return -1;
-    
-    
-    if (syscall_create(argv[2], bytes_read) != 0)
+    syscall_read(src, buffer, size);
+
+    if (syscall_create(argv[2], size) != 0)
         if (syscall_delete(argv[2]) != 0 ||
-            syscall_create(argv[2], bytes_read) != 0)
+            syscall_create(argv[2], size) != 0)
             return -1;
     
     int dst = syscall_open(argv[2]);

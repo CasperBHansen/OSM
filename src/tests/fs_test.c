@@ -22,9 +22,9 @@ int main()
     assert(syscall_open(pathname) < 0,
            "Filepath %s is too long: %d", pathname, strlen(pathname));
 
-    int handle0 = syscall_open("[arkimedes]fs_test");
-    int handle1 = syscall_open("[arkimedes]fs_test");
-    int handle2 = syscall_open("[arkimedes]fs_test");
+    int handle0 = syscall_open("[hd]fs_test");
+    int handle1 = syscall_open("[hd]fs_test");
+    int handle2 = syscall_open("[hd]fs_test");
     
     assert(syscall_close(0) != 0,
             "Filehandle %d should not be closable.", 0);
@@ -52,7 +52,7 @@ int main()
            "File handle 42 should not be open in current process. "
            "syscall_close(42) returns %d.", close_ret);
 
-    char *new_file = "[arkimedes]new_file";
+    char *new_file = "[hd]new_file";
     int new_file_size = 32;
     int create_ret = syscall_create(new_file, new_file_size);
     assert(create_ret == 0,
@@ -84,18 +84,22 @@ int main()
 
     syscall_seek(new_handle, 0);
 
-    char buffer[18];
+    /*char buffer[18];
     int read_ret = syscall_read(new_handle, buffer, 18);
     assert(read_ret != -1,
            "Read %d bytes (return value) from file handle %d, buffer contains \"%s\"",
            read_ret, new_handle, buffer);
+
+    seek_ret = syscall_seek(new_handle, 100);
+    assert(seek_ret != 0,
+           "Seeking too far in file with handle %d. Returns: %d", new_handle, seek_ret);
 
 
     int delete_ret = syscall_delete(new_file);
     assert(delete_ret != 0,
            "File with pathname %s should not be deletable. Return value %d.",
            new_file, delete_ret);
-
+    */
     syscall_close(new_handle);
 
     /*delete_ret = syscall_delete(new_file);
