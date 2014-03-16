@@ -409,7 +409,7 @@ int process_is_file_open(char *pathname) {
                 spinlock_release(&process_table_slock);
                 _interrupt_set_state(intr_status);
 
-                return 1;
+                return j;
             }
         }
     }
@@ -418,7 +418,30 @@ int process_is_file_open(char *pathname) {
     _interrupt_set_state(intr_status);
 
     return 0;  // file is not open in any process
+}
+
+int process_is_file_open_in_current_process(int handle) {
+
+    process_control_block_t * pcb = process_get_current_process_entry();
     
+    interrupt_status_t intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+
+    int i;
+    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
+        if (pcb->open_files[i].file_handle == handle) {
+
+            spinlock_release(&process_table_slock);
+            _interrupt_set_state(intr_status);
+
+            return i;
+        }
+    }
+
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+
+    return 0;  // file is not open in any process
 }
 
 /** @} */

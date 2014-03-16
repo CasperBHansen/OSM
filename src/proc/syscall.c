@@ -203,8 +203,9 @@ int handle_syscall_read(int filehandle, void *buffer, int length) {
  */
 int handle_syscall_seek(int filehandle, int offset) {
 
-
-    // TODO: check if file is open in this process.
+    if (!process_is_file_open_in_current_process(filehandle))
+        return -1;
+    
     if (offset < 0)
         kprintf("Illegal offset!");
     

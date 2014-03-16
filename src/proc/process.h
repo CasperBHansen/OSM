@@ -139,4 +139,7 @@ int process_remove_open_file(int handle);
 /* Returns non-zero int if pathname file is open, otherwise 0. */
 int process_is_file_open(char *pathname);
 
+/* Returns non-zero int if handle is open in the current process, otherwise 0. */
+int process_is_file_open_in_current_process(int handle);
+
 #endif
