@@ -78,3 +78,40 @@ and if the process is alive. If that is the case, then we check by the passed
 \code{pathname} if the process has an entry for that file. Should the process
 have such an entry we return 1 indicating that we found such an entry, if no
 such entry is found, we return 0.
+
+\subsection{System Calls}
+Now that processes have the necessary components, we can give userland
+processes access to the filesystem by implementing the system calls.
+
+\subsubsection{Opening and closing}
+...
+
+\codefig{syscall-open}{proc/syscall.c}{147}{169}
+{Code excerpt showing the \code{handle\_syscall\_open} implementation.}
+
+...
+
+\codefig{syscall-close}{proc/syscall.c}{113}{122}
+{Code excerpt showing the \code{handle\_syscall\_close} implementation.}
+
+\subsubsection{Creating and deleting}
+For creating files, we did not have to perform any special operations before
+delegating the work on to the virtual filesystem API. So, we decided not to
+have a function for that, and simply call \code{vfs\_create} directly.
+\codefig{syscall-create}{proc/syscall.c}{272}{274}
+{Code excerpt showing the \code{handle\_syscall\_create} implementation.}
+
+When deleting a file we make use of the previously mentioned utility function
+\figref{code:process-is-file-open}, which checks whether or the file at
+\code{pathname} is current open in any process. If it is, return $-1$
+indicating an error occurred, otherwise call \code{vfs\_remove} which performs
+the actual deletion.
+\codefig{syscall-delete}{proc/syscall.c}{132}{134}
+{Code excerpt showing the \code{handle\_syscall\_delete} implementation.}
+
+\subsubsection{Seeking in files}
+...
+
+\subsubsection{Reading and writing}
+...
+
