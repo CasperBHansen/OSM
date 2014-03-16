@@ -409,7 +409,7 @@ int process_is_file_open(char *pathname) {
                 spinlock_release(&process_table_slock);
                 _interrupt_set_state(intr_status);
 
-                return j;
+                return 1;
             }
         }
     }
@@ -434,7 +434,7 @@ int process_is_file_open_in_current_process(int handle) {
             spinlock_release(&process_table_slock);
             _interrupt_set_state(intr_status);
 
-            return i;
+            return 1;
         }
     }
 

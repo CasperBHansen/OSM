@@ -167,7 +167,9 @@ fs_t * tfs_init(gbd_t *disk)
     fs->remove  = tfs_remove;
     fs->read    = tfs_read;
     fs->write   = tfs_write;
-    fs->getfree  = tfs_getfree;
+    fs->getfree = tfs_getfree;
+    fs->count   = tfs_count;
+    fs->file    = tfs_file;
 
     return fs;
 }
@@ -815,6 +817,38 @@ int tfs_getfree(fs_t *fs)
     
     semaphore_V(tfs->lock);
     return (tfs->totalblocks - allocated)*TFS_BLOCK_SIZE;
+}
+
+int tfs_count(fs_t *fs)
+{
+    tfs_t *tfs = (tfs_t *)fs->internal;
+    
+    semaphore_P(tfs->lock);
+    
+    uint32_t i;
+    int ret = 0;
+    for (i = 0; i < TFS_MAX_FILES; i++)
+        if (tfs->buffer_md[i].inode > 0) ret++;
+    
+    semaphore_V(tfs->lock);
+    
+    return ret;
+}
+
+int tfs_file(fs_t *fs, int index, char * buffer)
+{
+    tfs_t *tfs = (tfs_t *)fs->internal;
+    
+    semaphore_P(tfs->lock);
+   
+    if ((int)tfs->buffer_md[index].inode < 0)
+        return VFS_ERROR;
+    
+    stringcopy(buffer, tfs->buffer_md[index].name, VFS_NAME_LENGTH);
+    
+    semaphore_V(tfs->lock);
+    
+    return VFS_OK;
 }
 
 /** @} */

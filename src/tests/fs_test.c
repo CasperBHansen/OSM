@@ -25,6 +25,9 @@ int main()
     int handle0 = syscall_open("[arkimedes]fs_test");
     int handle1 = syscall_open("[arkimedes]fs_test");
     int handle2 = syscall_open("[arkimedes]fs_test");
+    
+    assert(syscall_close(0) != 0,
+            "Filehandle %d should not be closable.", 0);
 
     assert(handle0 == 3,
            "Filehandle %d returned. The first handle should be 3 since "

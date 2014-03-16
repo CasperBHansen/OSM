@@ -101,7 +101,6 @@ void handle_syscall_memlimit(context_t *user_context) {
 }
 
 
-
 /**
  * Handle SYSCALL_CLOSE syscall.
  *
@@ -111,15 +110,13 @@ void handle_syscall_memlimit(context_t *user_context) {
  * Returns: 0 on success or a negative integer on error.
  */
 int handle_syscall_close(int filehandle) {
-    if (filehandle < 2) return -1;  // not a valid closeable filehandle   TODO: may be redundant
-
     if (process_remove_open_file(filehandle) == 0)
         // avoiding std{in,out,err} (see handle_syscall_open)
         return vfs_close(filehandle - 2);
 
-    kprintf("Error: file handle %d is not open in this process\n", filehandle);
     return -1;
 }
+
 
 /**
  * Handle SYSCALL_DELETE syscall.
@@ -145,13 +142,6 @@ int handle_syscall_delete(const char *pathname) {
  *          file opened) on success or a negative integer on error.
  */
 int handle_syscall_open(const char *pathname) {
-    // Check pathname is not too long, as defined in fs/vfs.h.          TODO: may be redundant
-    if (strlen(pathname) > VFS_PATH_LENGTH) {
-        kprintf("Filepath exceeds the maximum length of %d.\n\
-                 The file %s was not opened.\n", VFS_PATH_LENGTH, pathname);
-        return -1;
-    }
-
     // Check if vfs_open returns a valid non-negative file handle, i.e. >= 1,
     // and return this plus 2 if it does to avoid conflicting with stdin (0),
     // stdout (1) and stderr (2).
@@ -220,6 +210,7 @@ int handle_syscall_seek(int filehandle, int offset) {
     return 0;
 }
 
+
 /**
  * Handle SYSCALL_WRITE syscall.
  *
@@ -281,6 +272,12 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_EXIT:
         handle_syscall_exit(user_context);
+        break;
+    case SYSCALL_FILE:
+        V0 = vfs_file((char *)A1, A2, (char *)A3);
+        break;
+    case SYSCALL_FILECOUNT:
+        V0 = vfs_count((char *) A1);
         break;
     case SYSCALL_HALT:
         halt_kernel();

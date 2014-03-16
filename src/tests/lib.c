@@ -183,6 +183,18 @@ int syscall_delete(const char *filename)
     return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename, 0, 0);
 }
 
+/* TODO: put comment */
+int syscall_filecount(const char * volumename)
+{
+    return (int)_syscall(SYSCALL_FILECOUNT, (uint32_t)volumename, 0, 0);
+}
+
+/* TODO: put comment */
+int syscall_file(const char * filename, int index, char * buffer)
+{
+    return (int)_syscall(SYSCALL_FILE, (uint32_t)filename, (uint32_t)index, (uint32_t)buffer);
+}
+
 /*
  * A call returns a handle to a userland semaphore identified by the
  * string specified by name, which can then be used by the calling

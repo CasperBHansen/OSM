@@ -795,9 +795,9 @@ int vfs_create(char *pathname, int size)
     fs = vfs_get_filesystem(volumename);
 
     if(fs == NULL) {
-	semaphore_V(vfs_table.sem);
+	    semaphore_V(vfs_table.sem);
         vfs_end_op();
-	return VFS_NO_SUCH_FS;
+	    return VFS_NO_SUCH_FS;
     }
 
     ret = fs->create(fs, filename, size);
@@ -838,9 +838,9 @@ int vfs_remove(char *pathname)
     fs = vfs_get_filesystem(volumename);
 
     if(fs == NULL) {
-	semaphore_V(vfs_table.sem);
+	    semaphore_V(vfs_table.sem);
         vfs_end_op();
-	return VFS_NO_SUCH_FS;
+	    return VFS_NO_SUCH_FS;
     }
 
     ret = fs->remove(fs, filename);
@@ -885,6 +885,70 @@ int vfs_getfree(char *filesystem)
     semaphore_V(vfs_table.sem);
     
     vfs_end_op();
+    return ret;
+}
+
+/*
+ * TODO: Anders :D
+ */
+
+int vfs_count(char * volumename)
+{
+    fs_t * fs = NULL;
+    int ret;
+    
+    if (vfs_start_op() != VFS_OK)
+        return VFS_UNUSABLE;
+    
+    semaphore_P(vfs_table.sem);
+    
+    fs = vfs_get_filesystem(volumename);
+    if (fs == NULL) {
+        semaphore_V(vfs_table.sem);
+        vfs_end_op();
+        return VFS_NO_SUCH_FS;
+    }
+    
+    ret = fs->count(fs);
+    
+    semaphore_V(vfs_table.sem);
+    
+    vfs_end_op();
+    return ret;
+}
+
+int vfs_file(char * volumename, int index, char * buffer)
+{
+    fs_t * fs = NULL;
+    int ret;
+    
+    if (index < 0 || buffer == NULL)
+        return VFS_ERROR;
+    
+    if (vfs_start_op() != VFS_OK)
+        return VFS_UNUSABLE;
+    
+    semaphore_P(vfs_table.sem);
+    
+    if (volumename != NULL) {
+        
+        fs = vfs_get_filesystem(volumename);
+        if (fs == NULL) {
+            semaphore_V(vfs_table.sem);
+            vfs_end_op();
+            return VFS_NO_SUCH_FS;
+        }
+        
+        ret = fs->file(fs, index, buffer);
+    } else {
+        // TODO: handle other case
+        ret = -1;
+    }
+    
+    semaphore_V(vfs_table.sem);
+    
+    vfs_end_op();
+    
     return ret;
 }
 
