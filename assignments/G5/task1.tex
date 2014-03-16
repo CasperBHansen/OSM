@@ -1,9 +1,80 @@
 %
 % task1.tex
 %
-% ...
+% System calls for the Buenos filesystem.
 %
 
-\section{...}
-...
+\section{Filesystem System Calls}
+Userland processes were given access to the console by the system calls
+\code{syscall\_read} and \code{syscall\_write} in the first assignment. We
+wish to extend this beyond the console, and provide support for reading and
+writing to and from the filesystem.
 
+\subsection{Filehandles}
+For console input and output standard filehandles were defined as fixed values
+\figref{code:std-handles}, but when dealing with the filesystem we must
+establish and maintain filehandles dynamically.
+
+\begin{multicols}{2}
+
+    \codefig{std-handles}{proc/syscall.h}{64}{66}
+    {Standard filehandle definitions.}
+    
+    \columnbreak
+    
+    We do so by associating a process with a list of open files, which were
+    opened by that process. This list will be held in the process control
+    block, and we be of fixed size. For testing purposes we have given it a
+    relatively small size of a maximum of 8.
+    
+\end{multicols}
+
+This is defined as \code{PROCESS\_MAX\_OPEN\_FILES} on line 54 of
+\file{proc/process.h}. The associatation array is populated with filehandles
+and their filepaths, a structure which we defined on lines 67--70 of the same
+file.
+
+\codefig{revised-pcb}{proc/process.h}{72}{97}
+{Code excerpt showing the revised \code{process\_control\_block\_t}.}
+
+We will need to perform maintenance on these arrays as files are opened and
+closed. For this we define two accessor functions; one for adding and one for
+removing filehandles.
+
+\codefig{process-add-file}{proc/process.c}{353}{364}
+{Code excerpt showing \code{process\_add\_open\_file}.}
+
+What we do in \code{process\_add\_open\_file} is that we go through the array
+of open files for the current process. For each entry we check for an
+available spot. If the \code{file\_handle} is $-1$, then the array index is
+vacant and we can place the file entry at that index. We then simply set the
+\code{file\_handle} and copy the \code{pathname} string into the entry,
+effectively occupying that entry with what was passed to the function. Upon
+succesfully occupying an entry we return 0, indicating that no error occurred,
+whilst returning 1 should we not find any available entry.
+
+\codefig{process-rem-file}{proc/process.c}{378}{389}
+{Code excerpt showing \code{process\_remove\_open\_file}.}
+
+Correspondingly, in \code{process\_remove\_open\_file} we loop through the
+array of open files. For each entry of the array we check if the passed handle
+is equal to the current entry \code{file\_handle}. If so, then we must vacate
+the entry. As the condition we look for in \code{proces\_add\_open\_file} is
+whether or not \code{file\_handle} is equal to $-1$, we must set this when
+vacating, as well as ensure that the \code{pathname} reference is nullified.
+
+\newpage
+Another function we will be needing is one that can query whether or not a
+file is open in any process. A possible scenario is that process $p_a$ opens a
+file $f$, and another process $p_b$ attempts to delete the file $f$. We reason
+that we shouldn't allow $p_b$ to delete the open file $f$, even if it is not
+the owner of the file.
+
+\codefig{process-is-file-open}{proc/process.c}{402}{415}
+{Code excerpt showing \code{process\_is\_file\_open}.}
+
+In \code{process\_is\_file\_open} we go through the entire array of processes,
+and if the process is alive. If that is the case, then we check by the passed
+\code{pathname} if the process has an entry for that file. Should the process
+have such an entry we return 1 indicating that we found such an entry, if no
+such entry is found, we return 0.

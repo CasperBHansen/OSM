@@ -61,7 +61,7 @@
 /* When userland program reads or writes these already open files it
  * actually accesses the console.
  */
-#define FILEHANDLE_STDIN 0
+#define FILEHANDLE_STDIN  0
 #define FILEHANDLE_STDOUT 1
 #define FILEHANDLE_STDERR 2
 

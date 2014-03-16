@@ -354,7 +354,6 @@ int process_add_open_file(int handle, char *pathname) {
     for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
         if (pcb->open_files[i].file_handle == -1 || pcb->open_files[i].pathname == pathname) {
             pcb->open_files[i].file_handle = handle;
-            //pcb->open_files[i].pathname = pathname;
             stringcopy(pcb->open_files[i].pathname, pathname, PATH_LENGTH);
 
             spinlock_release(&process_table_slock);
