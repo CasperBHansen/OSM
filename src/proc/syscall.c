@@ -235,9 +235,8 @@ int handle_syscall_write(int filehandle, void *buffer, int length) {
         gcd_t *gcd = (gcd_t *) dev->generic_device;
         int len = gcd->write(gcd, buffer, (int) length);
         return len;
-    } else {
-        return vfs_write(filehandle - 2, buffer, length);
     }
+    return vfs_write(filehandle - 2, buffer, length);
 }
 
 
