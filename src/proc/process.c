@@ -256,8 +256,6 @@ void process_finish(int retval) {
     thread_table_t *thr = thread_get_current_thread_entry();
     process_id_t pid = process_get_current_process();
 
-    kprintf("\n\nReturn value from process with pid: %d is %d\n", pid, retval); // TODO
-
     intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
     int i;
@@ -266,6 +264,8 @@ void process_finish(int retval) {
         if (process_table[i].parent_id == pid)
             process_table[i].parent_id = -1;
     }
+    
+    // SUGGESTION: check if any files are open, clean them up if so.
 
     process_table[pid].retval = retval;
     process_table[pid].state = PROCESS_ZOMBIE;
@@ -352,7 +352,7 @@ int process_add_open_file(int handle, char *pathname) {
 
     int i;
     for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        if (pcb->open_files[i].file_handle == -1 || pcb->open_files[i].pathname == pathname) {
+        if (pcb->open_files[i].file_handle == -1) {
             pcb->open_files[i].file_handle = handle;
             stringcopy(pcb->open_files[i].pathname, pathname, PATH_LENGTH);
 

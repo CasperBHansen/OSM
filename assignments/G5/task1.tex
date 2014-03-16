@@ -98,20 +98,32 @@ processes access to the filesystem by implementing the system calls.
 For creating files, we did not have to perform any special operations before
 delegating the work on to the virtual filesystem API. So, we decided not to
 have a function for that, and simply call \code{vfs\_create} directly.
+
 \codefig{syscall-create}{proc/syscall.c}{272}{274}
 {Code excerpt showing the \code{handle\_syscall\_create} implementation.}
 
 When deleting a file we make use of the previously mentioned utility function
 \figref{code:process-is-file-open}, which checks whether or the file at
+
 \code{pathname} is current open in any process. If it is, return $-1$
 indicating an error occurred, otherwise call \code{vfs\_remove} which performs
 the actual deletion.
+
 \codefig{syscall-delete}{proc/syscall.c}{132}{134}
 {Code excerpt showing the \code{handle\_syscall\_delete} implementation.}
 
 \subsubsection{Seeking in files}
 ...
 
+\codefig{syscall-seek}{proc/syscall.c}{204}{220}
+{Code excerpt showing the \code{handle\_syscall\_seek} implementation.}
+
 \subsubsection{Reading and writing}
 ...
+
+\codefig{syscall-read}{proc/syscall.c}{182}{190}
+{Code excerpt showing the \code{handle\_syscall\_read} implementation.}
+
+\codefig{syscall-write}{proc/syscall.c}{231}{240}
+{Code excerpt showing the \code{handle\_syscall\_write} implementation.}
 
