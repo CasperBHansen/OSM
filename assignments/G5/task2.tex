@@ -39,11 +39,10 @@ of file is reached a zero is returned and we get out of the loop again with the
 file size in the is kept in the variable \code{size}. The reading position of
 \code{src} is set to zero and while loop is initiated and the content is placed
 into the buffer.\\
-A check if the creation of the destination file is okay, if not an error has
-occured and the operation is halted.
+The destination file is created and a check for if the file was created
+successfully, if errors have occured then the operation is halted.
 \codefig{cpcheck}{tests/osh.c}{140}{145}{Code excerpt from cp command, showing
 the destination file check}
-
 
 \subsection{Command: cmp}
 The \code{argc}-variable is checked and if it differs from three, then the
