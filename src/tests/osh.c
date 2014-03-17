@@ -29,11 +29,11 @@ int cmd_help();
 cmd_t commands[] =
 {
 //    {"cmp",  cmd_cmp,  "removes a file"},
-    {"cp",   cmd_cp,   "removes a file"},
+    {"cp",   cmd_cp,   "copies a file"},
     {"echo", cmd_echo, "print the arguments to the screen"},
-    {"exit", cmd_exit, "removes a file"},
+    {"exit", cmd_exit, "exits buenos"},
     {"help", cmd_help, "show this help message"},
-    {"ls",   cmd_ls,   "removes a file"},
+    {"ls",   cmd_ls,   "lists file on the given volume"},
     {"read", cmd_read, "read a line from standard in and write it to a new file"},
     {"rm",   cmd_rm,   "removes a file"},
     {"show", cmd_show, "print the contents of the given file to the screen"}
