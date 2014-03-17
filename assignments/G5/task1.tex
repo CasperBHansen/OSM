@@ -17,7 +17,7 @@ establish and maintain filehandles dynamically.
 
 \begin{multicols}{2}
 
-    \codefig{std-handles}{proc/syscall.h}{64}{66}
+    \codefig{std-handles}{proc/syscall.h}{66}{68}
     {Standard filehandle definitions.}
     
     \columnbreak
@@ -95,32 +95,30 @@ Now that processes have the necessary components, we can give userland
 processes access to the filesystem by implementing the system calls.
 
 \subsubsection{Opening and closing}
-To open a file we check that the \code{pathname} is legal on lines 149--153,
-and that we could indeed open the file on lines 158--160. If this is the case,
-we then attempt to add it to the process open files on lines 162--168 --- note
-that we offset the handle by 2, because filehandles in the interval $[0;2]$
-are reserved for standard file handles \figref{code:std-handles}. If this
-succeeds then we return the handle, otherwise we close the file and return
-$-1$ indicating an error.
+To open a file we check that we could indeed open the file on lines 148--150.
+If this is the case, we then attempt to add it to the process open files on
+lines 152--158 --- note that we offset the handle by 2, because filehandles in
+the interval $[0;2]$ are reserved for standard file handles
+\figref{code:std-handles}. If this succeeds then we return the handle,
+otherwise we close the file and return $-1$ indicating an error.
 
-\codefig{syscall-open}{proc/syscall.c}{147}{169}
+\codefig{syscall-open}{proc/syscall.c}{144}{159}
 {Code excerpt showing the \code{handle\_syscall\_open} implementation.}
 
-\newpage
-When closing a file we ensure that we are not attempting to close a standard
-filehandle \figref{code:std-handles} on line 114. We then attempt to remove
-the file from the process open files. If succesful we can then close the file
-on line 118, otherwise, we return $-1$ indicating an error has occurred.
+When closing a file we attempt to remove the file from the process open files.
+If succesful we can then close the file on line 115, otherwise, we return $-1$
+indicating an error has occurred.
 
-\codefig{syscall-close}{proc/syscall.c}{113}{122}
+\codefig{syscall-close}{proc/syscall.c}{112}{118}
 {Code excerpt showing the \code{handle\_syscall\_close} implementation.}
 
+\newpage
 \subsubsection{Creating and deleting}
-For creating files, we did not have to perform any special operations before
-delegating the work on to the virtual filesystem API. So, we decided not to
-have a function for that, and simply call \code{vfs\_create} directly.
+For creating files, we did not have to perform any operations before
+delegating the work on to the virtual filesystem API. So, we simply call
+\code{vfs\_create} directly.
 
-\codefig{syscall-create}{proc/syscall.c}{272}{274}
+\codefig{syscall-create}{proc/syscall.c}{263}{265}
 {Code excerpt showing the \code{handle\_syscall\_create} implementation.}
 
 When deleting a file we make use of the previously mentioned utility function
@@ -130,17 +128,16 @@ When deleting a file we make use of the previously mentioned utility function
 indicating an error occurred, otherwise call \code{vfs\_remove} which performs
 the actual deletion.
 
-\codefig{syscall-delete}{proc/syscall.c}{132}{134}
+\codefig{syscall-delete}{proc/syscall.c}{129}{131}
 {Code excerpt showing the \code{handle\_syscall\_delete} implementation.}
 
-\newpage
 \subsubsection{Seeking in files}
 Our implementation of seeking may be very inefficient. First we check that the
-file is actually open on lines 206-207 and that the offset is legal on lines
-209-210. We then reset the seek position, and read until the seek position has
-been reached, so as to not seek beyond the file.
+file is actually open on lines 196-197 and that the offset is legal on lines
+199-200. We then reset the seek position, and read until the seek position has
+been reached while not seeking beyond the file.
 
-\codefig{syscall-seek}{proc/syscall.c}{204}{220}
+\codefig{syscall-seek}{proc/syscall.c}{194}{211}
 {Code excerpt showing the \code{handle\_syscall\_seek} implementation.}
 
 \subsubsection{Reading and writing}
@@ -155,7 +152,7 @@ needed for that (which were already in place) and returning from the
 \code{if}-statement. If the filehandle was not \code{FILEHANDLE\_STDIN} we
 then simply delegate the call on to \code{vfs\_read}.
 
-\codefig{syscall-read}{proc/syscall.c}{182}{190}
+\codefig{syscall-read}{proc/syscall.c}{172}{180}
 {Code excerpt showing the revised \code{handle\_syscall\_read}.}
 
 Similarly, for writing, we handle the cases of \code{FILEHANDLE\_STDOUT} and
@@ -163,6 +160,6 @@ Similarly, for writing, we handle the cases of \code{FILEHANDLE\_STDOUT} and
 structure as with read. If these are not the case, we then case any other case
 after the \code{if}-statement by delegating the work on to \code{vfs\_write}.
 
-\codefig{syscall-write}{proc/syscall.c}{232}{241}
+\codefig{syscall-write}{proc/syscall.c}{223}{231}
 {Code excerpt showing the revised \code{handle\_syscall\_write}.}
 

@@ -265,7 +265,6 @@ void syscall_handle(context_t *user_context)
         break;
     case SYSCALL_DELETE:
         V0 = handle_syscall_delete((char *) A1);
-        //V0 = vfs_remove((char *) A1);
         break;
     case SYSCALL_EXEC:
         V0 = process_spawn((const char *) A1);
