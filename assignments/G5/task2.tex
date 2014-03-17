@@ -5,5 +5,56 @@
 %
 
 \section{A Simple Shell}
-...
 
+\subsection{Counting files}
+This section explains the implementation of a system call, called
+\verb|syscall_filecount|, that takes a character pointer as argument and
+returns an integer. The syscall returns the number of files in the volume with
+the name given as argument, or if it is called with the argument \verb|NULL|,
+it returns the number of mounted file system volumes. If the argument character
+array is not a mounted volume name or if an error occured, a negative integer
+is returned (using the macro error codes defined in \file{vfs.h}), indicating
+an error.
+
+The syscall handling is added to \file{tests/lib.\{h,c\}}. The header file
+contains the declaration of the \verb|syscall_filecount| function and
+\file{lib.c} contains the implementation, shown in figure
+\ref{code:filecount_handling}.
+
+\codefig{filecount_handling}{tests/lib.c}{188}{191}{Filecount syscall handling.}
+
+This function just utilizes the assembly syscall wrapper function
+\verb|_syscall| for issuing a syscall instruction from C. This syscall is
+handled in \file{proc/syscall.c} and this just passes the parameter onto a new
+function \verb|vfs_count|, defined in \file{fs/vfs.c} and declared in the
+correspondig header file. This code except from \file{proc/syscall.c} is shown
+in figure \ref{code:filecount_syscall}.
+
+\codefig{filecount_syscall}{proc/syscall.c}{279}{281}{Filecount syscall handling.}
+
+The interface, so to speak, to the file system for performing the described
+counting task is implemented in the \file{fs/vfs.c} file. That is, the function
+\verb|vfs_count|, shown in figure \ref{code:vfs_count}, retrieves the
+filesystem of the given volume name and calls the actual \verb|count| function
+implmented in the file system that implements the interface specified in the
+virtual file system. This design is somewhat object-oriented, allowing for
+other file system implementations to be added and used wihtout change, if they
+implement the functions specified in, and called from, the virtual file system.
+
+\codefig{vfs_count}{fs/vfs.c}{900}{923}{Filecount virtual file system interface.}
+
+The actual work is performed in the trivial file system, in the new function
+\verb|tfs_count|. The trivial file system structure, of type \verb|tfs_t|, is
+accessed through the \verb|internal| field in the argument file system
+structure. The lock of the file system is acquired, i.e. by calling procure on
+the semaphore, securing mutual exclusion on file system access. The
+\verb|buffer_md| field is an array of points to type \verb|tfs_direntry_t|,
+which contain the inode and name of the file. The array is traversed and for
+each entry with an inode that is greater than zero, the return value variable
+is incremented. The inode that is greater than zero indicated that the array
+entry struct is a valid and existing file in the file system volume.
+
+\codefig{tfs_count}{fs/tfs.c}{822}{836}{Filecount trivial file system implementation.}
+
+After the loop, the semaphore is released and the variable \verb|ret|, that
+contains the number of files in the volume, is returned.
