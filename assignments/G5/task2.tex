@@ -43,6 +43,14 @@ The destination file is created and a check for if the file was created
 successfully, if errors have occured then the operation is halted.
 \codefig{cpcheck}{tests/osh.c}{140}{145}{Code excerpt from cp command, showing
 the destination file check}
+The newly created file, codenamed dst, is then opened and if this turns bad then
+the source file is closed and the operation halts.\\
+Then at last, the stars align, and the data is written to the new file, byte by
+byte. If, when done, the \verb|syscall\_write(...)| returns a value different
+from \verb|size|, then somethign went bad, the files are closed and the
+operation is halted.\\
+If the operation is still running, then the copy has been successful and the
+files are closed and the operation stops.
 
 \subsection{Command: cmp}
 The \code{argc}-variable is checked and if it differs from three, then the
