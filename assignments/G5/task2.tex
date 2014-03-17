@@ -11,5 +11,48 @@ automatically. In this task we are given a small shell program and we are
 supposed to implement some basic programs, such as ls, rm and cp.
 
 \subsection{Command: exit}
-\codefig{exitcommand}{tests/osh.c}{1}{1}{Code excerpt for the exit command.}
+There is not much code behind this command. A \code{syscall\_halt()} is issued
+and thus halting the kernel.\\
+Since the command requires no input, there is no check for the validness of the
+input, since it is simply discarded.
+\codefig{exitcommand}{tests/osh.c}{167}{171}{Code excerpt for the exit command.}
+
+\subsection{Command: rm}
+The input is checked, if argc is less than two, no input is given and the
+operation is halted, since there was not given any input.\\
+Then a while-loop is entered, the while loop is in effect while \code{i < argc},
+where argc holds the amount of inputs given, ie. \code{rm file1 file2 file3},
+means \textit{argc = 4}. The count variable i is set to 1, thus ignoring the
+command name itself, then for every increment a file is deleted, if something
+went wrong a message is given and the loop keeps on trucking until the exit
+criteria is met. 
+\codefig{rmcommand}{tests/osh.c}{190}{206}{Code excerpt for the rm command.}
+
+\subsection{Command: cp}
+
+\subsection{Command: cmp}
+The \code{argc}-variable is checked and if it differs from three, then the
+operation is halted and a message is printed showing how to properly use the
+command.\\
+Then the files are opened, if unsuccessful the operation is halted and the
+file(s) are closed. If successful then the for-loop is entered where all the
+dirty work happens. If some of the following happen then the files are different
+and the loop breaks:\\
+\begin{itemize}
+  \item \code{buf0 != buf1}\\
+        In this case the files are identical right up to byte i, which is
+        returned.
+  \item \code{read\_ret0 < 0 || read\_ret1 < 0}\\
+        An error occured when reading a file, -1 is returned.
+  \item \code{read\_ret0 != read\_ret1}
+        The file lengths differ ie. they are not alike. -1 is returned.
+\end{itemize}
+And at last, if everything turned out well thus far the files are indeed
+identical and we have arrived at the last byte successfully. The loop is broken
+and the files are closed.
+\codefig{cmpcommand}{tests/osh.c}{208}{255}{Code excerpt for the cmp command.}
+
+\subsection{Command: ls}
+
+\subsection{Counting files}
 
