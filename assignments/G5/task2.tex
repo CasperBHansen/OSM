@@ -29,6 +29,28 @@ criteria is met.
 \codefig{rmcommand}{tests/osh.c}{190}{206}{Code excerpt for the rm command.}
 
 \subsection{Command: cp}
+The input is checked, if argc is different than 3 then the operation is halted
+and a message on how to correctly use the command is given.\\
+If \code{syscall\_open(argv[1])} is less than 3 an error has occured and the
+operation is halted. Otherwise a handle of the source file is put into src. Then
+it's time to get the size of the source file, this is done in the for-loop where
+the criteria is \verb|syscall\_read(src, &dummy, 1)|, meaning that when the end
+of file is reached a zero is returned and we get out of the loop again with the
+file size in the is kept in the variable \code{size}. The reading position of
+\code{src} is set to zero and while loop is initiated and the content is placed
+into the buffer.\\
+The destination file is created and a check for if the file was created
+successfully, if errors have occured then the operation is halted.
+\codefig{cpcheck}{tests/osh.c}{140}{145}{Code excerpt from cp command, showing
+the destination file check}
+The newly created file, codenamed dst, is then opened and if this turns bad then
+the source file is closed and the operation halts.\\
+Then at last, the stars align, and the data is written to the new file, byte by
+byte. If, when done, the \verb|syscall\_write(...)| returns a value different
+from \verb|size|, then somethign went bad, the files are closed and the
+operation is halted.\\
+If the operation is still running, then the copy has been successful and the
+files are closed and the operation stops.
 
 \subsection{Command: cmp}
 The \code{argc}-variable is checked and if it differs from three, then the
