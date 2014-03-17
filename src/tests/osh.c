@@ -28,7 +28,7 @@ int cmd_help();
 
 cmd_t commands[] =
 {
-//    {"cmp",  cmd_cmp,  "removes a file"},
+    {"cmp",  cmd_cmp,  "removes a file"},
     {"cp",   cmd_cp,   "removes a file"},
     {"echo", cmd_echo, "print the arguments to the screen"},
     {"exit", cmd_exit, "removes a file"},
@@ -114,28 +114,52 @@ int cmd_cp(int argc, char** argv)
         printf("Usage: cp <source> <destination>\n");
         return -1;
     }
+
+    int src, dst;
     
-    int src = syscall_open(argv[1]);
-    if (src < 3)
+    if ((src = syscall_open(argv[1])) < 3)
         return -1;
 
     int size;
     char dummy;
-    for (size = 0; syscall_read(src, &dummy, sizeof(char)); ++size);
+    for (size = 0; syscall_read(src, &dummy, 1); ++size); // TODO: size - 1 ?
+    printf("size determined to %d\n", size);
 
     char * buffer = (char *)malloc(sizeof(char) * size);
     
     syscall_seek(src, 0);
-    syscall_read(src, buffer, size);
+    /*if (syscall_read(src, buffer, size) != size)
+        return -1;*/
+    int i = 0;
+    while (i != size) {
+        printf("i = %d, read %d bytes\n", i, syscall_read(src, buffer + i, 1));
+        i++;
+    }
+    printf("syscall read %d bytes\n", size);
 
-    if (syscall_create(argv[2], size) != 0)
-        if (syscall_delete(argv[2]) != 0 ||
-            syscall_create(argv[2], size) != 0)
+    if (syscall_create(argv[2], size) != 0) {
+        if (syscall_delete(argv[2]) != 0 || syscall_create(argv[2], size) != 0) {
+            syscall_close(src);
             return -1;
-    
-    int dst = syscall_open(argv[2]);
-    if (syscall_write(dst, buffer, size) != size)
+        }
+    }
+    printf("new file created\n");
+
+    if ((dst = syscall_open(argv[2])) < 3) {
+        syscall_close(src); // TODO: delete file if we created it?
         return -1;
+    }
+    printf("new file opened\n");
+
+    if (syscall_write(dst, buffer, size) != size) {
+        syscall_close(src);
+        syscall_close(dst);
+        return -1;
+    }
+    printf("written %d bytes\n", size);
+
+    syscall_close(src);
+    syscall_close(dst);
     
     return 0;
 }
@@ -179,6 +203,55 @@ int cmd_rm(int argc, char** argv) {
     
     if (i == argc) return 1;
     else return 0;
+}
+
+int cmd_cmp(int argc, char** argv)
+{
+    if (argc != 3) {
+        printf("Usage: cmp <file0> <file1>\n");
+        return -1;
+    }
+
+    int fd0, fd1;
+    if ((fd0 = syscall_open(argv[1])) < 3) return -1;
+    if ((fd1 = syscall_open(argv[2])) < 3) {
+        syscall_close(fd0);
+        return -1;
+    }
+    printf("fd0 = %d, fd1 = %d\n", fd0, fd1);
+
+    int ret;
+    int read_ret0, read_ret1;
+    char buf0, buf1;
+    int i;
+    for (i = 0; /* until break */ ; i++) {
+        read_ret0 = syscall_read(fd0, &buf0, 1);
+        read_ret1 = syscall_read(fd1, &buf1, 1);
+        if (buf0 != buf1) {
+            printf("files differ at byte %d\n", i);
+            ret = i;
+            break;
+        }
+        if (read_ret0 < 0 || read_ret1 < 0) {
+            printf("error on file reading, reading file 1 returned %d, "
+                   "reading file 2 returned %d\n", read_ret0, read_ret1);
+            ret = -1;
+            break;
+        }
+        if (read_ret0 != read_ret1) {
+            printf("files have different length\n");
+            ret =  -1;
+            break;
+        }
+        if (read_ret0 == 0 && read_ret1 == 0) {
+            printf("files are identical\n");
+            ret = 0;
+            break;
+        }
+    }
+    syscall_close(fd0);
+    syscall_close(fd1);
+    return ret;
 }
 
 int cmd_echo(int argc, char** argv) {
