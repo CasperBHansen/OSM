@@ -888,10 +888,15 @@ int vfs_getfree(char *filesystem)
     return ret;
 }
 
-/*
- * TODO: Anders :D
+/* If volumename is the name of a mouted volume, return the number of files in
+ * the volume, if argument is NULL, return the number of mouted volumes.
+ *
+ * @param  name of file system volume, or NULL
+ *
+ * @return number of files on the volume given as argument, if this is valid,
+ *         number of mouted volumes if argument is NULL, otherwise a suitable
+ *         VFS error code.
  */
-
 int vfs_count(char * volumename)
 {
     fs_t * fs = NULL;

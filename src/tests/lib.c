@@ -183,7 +183,8 @@ int syscall_delete(const char *filename)
     return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename, 0, 0);
 }
 
-/* TODO: put comment */
+/* If volumename is the name of a mouted volume, return the number of files in
+ * the volume, if argument is NULL, return the number of mouted volumes. */
 int syscall_filecount(const char * volumename)
 {
     return (int)_syscall(SYSCALL_FILECOUNT, (uint32_t)volumename, 0, 0);
