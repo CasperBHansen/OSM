@@ -74,8 +74,6 @@ identical and we have arrived at the last byte successfully. The loop is broken
 and the files are closed.
 \codefig{cmpcommand}{tests/osh.c}{208}{255}{Code excerpt for the cmp command.}
 
-\subsection{Command: ls}
-
 
 \subsection{Counting files}
 This section explains the implementation of a system call, called
@@ -132,10 +130,44 @@ After the loop, the semaphore is released and the variable \verb|ret|, that
 contains the number of files in the volume, is returned.
 
 \subsection{Retrieving file names}
-The sycall called \verb|syscall_file| takes three arguments: a volume name of
-type \verb|char| pointer, an integer index and a buffer of type \verb|char|
+The system call called \verb|syscall_file| takes three arguments: a volume name
+of type \verb|char| pointer, an integer index and a buffer of type \verb|char|
 pointer. As before, \verb|NULL| for the first argument should make the function
 work on volume names rather than file names, but this is also not implemented
 yet. If the volume name argument is valid, the name of the file at the
 specified index in the table of files is copied to the buffer given as third
-argument.
+argument. Zero is returned if the filename was succesfully copied and a
+suitable VFS error code is returned on error.  Handling of the new syscall is
+implemented as with \verb|syscall_file| so similar additions, as those showed in
+figure \ref{code:filecount_handling} and \ref{code:filecount_syscall}, have
+been made to \file{tests/lib.\{c,h\}} and \file{proc/syscall.\{c,h\}}, but in
+this case a function \verb|vfs_file| is called. This function is, however, very
+similar to \verb|vfs_count| shown in figure \ref{code:vfs_count} and it calls
+an a new function \verb|file| in the file system, which is also implemented in
+the trivial file system of buenos. This function \verb|tfs_file|, in
+\file{fs/tfs.c}, is passed a pointer to the filesystem struct, an index and a
+pointer to a \verb|char| buffer, like before. The implementation of
+\verb|tfs_file| is shown in figure \ref{code:tfs_file}.
+
+\codefig{tfs_file}{fs/tfs.c}{838}{862}
+        {Trivial file system implementation of \code{count} function.}
+
+%Like before, the trivial file system is accessed through the file system struct and the
+%sempahore is procured. TODO: finish
+
+\subsection{Listing files}
+The standard unix command \verb|ls| is implemented in the \verb|osh| shell,
+although in a simplified version. A prototype for the \verb|cmd_ls| is added,
+with the same type as the regular C main function, i.e. \verb|int * char** -> int|.
+The command function, name and description is added to the \verb|cmd_t commands|
+array, as with the other commands and the command is implemented in the
+function shown in \ref{code:ls}.
+
+\codefig{ls}{tests/osh.c}{173}{188}
+        {Implementation of the command \code{ls} in the \code{osh} shell.}
+
+It is checked that only one argument is provided, the volume name. If that is
+the case the system call function \verb|syscall_file| is called for each index
+from zero to the number of files in the volume, as returned by
+\verb|syscall_filecount|. This call copies each file name to the buffer and the
+character array in this buffer is printed.
