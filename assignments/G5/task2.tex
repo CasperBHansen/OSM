@@ -63,7 +63,8 @@ the name given as argument, or if it is called with the argument \verb|NULL|,
 it returns the number of mounted file system volumes. If the argument character
 array is not a mounted volume name or if an error occured, a negative integer
 is returned (using the macro error codes defined in \file{vfs.h}), indicating
-an error.
+an error. The counting of file system volume names have not been implemented
+yet.
 
 The syscall handling is added to \file{tests/lib.\{h,c\}}. The header file
 contains the declaration of the \verb|syscall_filecount| function and
@@ -107,3 +108,12 @@ entry struct is a valid and existing file in the file system volume.
 
 After the loop, the semaphore is released and the variable \verb|ret|, that
 contains the number of files in the volume, is returned.
+
+\subsection{Retrieving file names}
+The sycall called \verb|syscall_file| takes three arguments: a volume name of
+type \verb|char| pointer, an integer index and a buffer of type \verb|char|
+pointer. As before, \verb|NULL| for the first argument should make the function
+work on volume names rather than file names, but this is also not implemented
+yet. If the volume name argument is valid, the name of the file at the
+specified index in the table of files is copied to the buffer given as third
+argument.
