@@ -110,7 +110,10 @@ int tfs_remove(fs_t *fs, char *filename);
 int tfs_read(fs_t *fs, int fileid, void *buffer, int bufsize, int offset);
 int tfs_write(fs_t *fs, int fileid, void *buffer, int datasize, int offset);
 int tfs_getfree(fs_t *fs);
-int tfs_count(fs_t *fs);
-int tfs_file(fs_t *fs, int index, char * buffer);
+int tfs_filecount(fs_t *fs, char *dirname);
+int tfs_file(fs_t *fs, char *dirname, int idx, char *buffer);
+int tfs_mkdir(fs_t *fs, char *dirname);
+int tfs_rmdir(fs_t *fs, char *dirname);
+
 
 #endif    /* FS_TFS_H */

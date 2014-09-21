@@ -67,17 +67,21 @@ typedef struct {
     thread_state_t state;
     /* which resource this thread sleeps on (0 for none) */
     uint32_t sleeps_on;
+    
+    /* real-time deadline */
+    uint32_t deadline;
+
     /* pointer to this thread's pagetable */
     pagetable_t *pagetable;
 
     /* PID. Currently not used for anything, but might be useful
-       if process table is implemented. - now put to good use ;) */
+       if process table is implemented. */
     process_id_t process_id;
     /* pointer to the next thread in list (<0 = end of list) */
     TID_t next; 
 
     /* pad to 64 bytes */
-    uint32_t dummy_alignment_fill[9]; 
+    uint32_t dummy_alignment_fill[8]; 
 } thread_table_t;
 
 /* function prototypes */
@@ -95,7 +99,6 @@ void thread_goto_userland(context_t *usercontext);
 
 void thread_finish(void);
 
-void thread_set_thread_pid(TID_t thread_id, process_id_t process_id);
 
 #define USERLAND_ENABLE_BIT 0x00000010
 

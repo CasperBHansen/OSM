@@ -111,4 +111,8 @@
  */
 #define CONFIG_USERLAND_STACK_SIZE 1
 
+/* Maximum number of named pipes
+ */
+#define CONFIG_MAX_PIPES 4
+
 #endif /* BUENOS_CONFIG_H */

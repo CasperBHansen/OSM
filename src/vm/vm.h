@@ -38,6 +38,10 @@
 #define BUENOS_VM_VM_H
 
 #include "vm/pagetable.h"
+/* Check whether given (virtual) address is even or odd mapping
+   in a pair of mappings for TLB. */
+#define ADDR_IS_ON_ODD_PAGE(addr)  ((addr) & 0x00001000)  
+#define ADDR_IS_ON_EVEN_PAGE(addr) (!((addr) & 0x00001000))  
 
 void vm_init(void);
 
@@ -47,6 +51,7 @@ void vm_destroy_pagetable(pagetable_t *pagetable);
 void vm_map(pagetable_t *pagetable, uint32_t physaddr, 
 	    uint32_t vaddr, int dirty);
 void vm_unmap(pagetable_t *pagetable, uint32_t vaddr);
+void vm_unmap_and_free(pagetable_t *pagetable, uint32_t vaddr);
 
 void vm_set_dirty(pagetable_t *pagetable, uint32_t vaddr, int dirty);
 

@@ -77,10 +77,11 @@ uint32_t _syscall(uint32_t syscall_num, uint32_t a1, uint32_t a2, uint32_t a3);
 
 void syscall_halt(void);
 
-pid_t syscall_exec(const char *filename);
+pid_t syscall_exec(const char *filename, int deadline);
 pid_t syscall_execp(const char *filename, int argc, const char **argv);
 int syscall_join(pid_t pid);
 void syscall_exit(int retval);
+int syscall_getclock();
 
 int syscall_open(const char *filename);
 int syscall_close(int filehandle);
@@ -89,17 +90,12 @@ int syscall_read(int filehandle, void *buffer, int length);
 int syscall_write(int filehandle, const void *buffer, int length);
 int syscall_create(const char *filename, int size);
 int syscall_delete(const char *filename);
-int syscall_filecount(const char *volumename);
-int syscall_file(const char *name, int index, char * buffer);
+
+int syscall_filecount(const char *pathname);
+int syscall_file(const char *pathname, int index, char *buffer);
 
 int syscall_fork(void (*func)(int), int arg);
 void *syscall_memlimit(void *heap_end);
-
-typedef void usr_sem_t;
-
-usr_sem_t* syscall_sem_open(char const* name, int value);
-int syscall_sem_p(usr_sem_t* handle);
-int syscall_sem_v(usr_sem_t* handle);
 
 #ifdef PROVIDE_STRING_FUNCTIONS
 size_t strlen(const char *s);
@@ -129,15 +125,13 @@ int snprintf(char *, int, const char *, ...);
 #endif
 
 #ifdef PROVIDE_HEAP_ALLOCATOR
-// #define HEAP_SIZE 256 /* 256 byte heap - puny! */
-void heap_init(); /* Call this once before any other heap functions. */
+#define HEAP_SIZE 256 /* 256 byte heap - puny! */
+void heap_init();
 void *calloc(size_t nmemb, size_t size);
 void *malloc(size_t size);
 void free(void *ptr);
 void *realloc(void *ptr, size_t size);
 #endif
-
-void * malloc(size_t size);
 
 #ifdef PROVIDE_MISC
 int atoi(const char *nptr);

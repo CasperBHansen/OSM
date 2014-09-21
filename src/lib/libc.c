@@ -147,7 +147,7 @@ char *stringcopy(char *target, const char *source, int buflen)
 
     ret = target;
 
-    for(i = 0; i < buflen - 1; i++) {
+    for(i = 0; i < buflen; i++) {
         *target = *source;
         if (*source == '\0') {
             i++;

@@ -34,92 +34,89 @@
  *
  */
 
-#include "kernel/assert.h"
-#include "kernel/interrupt.h"
-#include "kernel/panic.h"
 #include "kernel/thread.h"
+#include "kernel/panic.h"
+#include "kernel/assert.h"
 #include "vm/tlb.h"
 #include "vm/pagetable.h"
+#include "vm/vm.h"
+#include "proc/process.h"
 
-#define EVEN_ODD_BIT 4096
+void tlb_modified_exception(void) {
+    /* A correct handling of this exception would be to send a terminate
+       signal to the process that caused it. For now, just panic. */
+    KERNEL_PANIC("TLB modified exception.");
+}
 
-int tlb_load_store_exception(void) {
-    // load exception state into state structure
-    tlb_exception_state_t state;
-    _tlb_get_exception_state(&state);
-    uint32_t badvpn2 = state.badvpn2;
+void tlb_load_exception(void) {
+    tlb_store_exception();
+}
 
-    // access page entries array in pagetable struct in thread struct
-    thread_table_t *t_table = thread_get_current_thread_entry();
-    pagetable_t *p_table = t_table->pagetable;
-    tlb_entry_t *p_entries = p_table->entries; // PAGETABLE_ENTRIES entries in array
+void tlb_store_exception(void) {
+    tlb_exception_state_t tes;
+    _tlb_get_exception_state(&tes);
 
-    int odd = state.badvaddr & EVEN_ODD_BIT;
+    pagetable_t *ptable = thread_get_current_thread_entry()->pagetable;
+    if(ptable == NULL) {
+        KERNEL_PANIC("No pagetable associated with thread.");
+    }
+    uint32_t i;
+    for(i=0; i<ptable->valid_count; i++) {
+        tlb_entry_t *entry = &ptable->entries[i];
+        if(entry->VPN2 == tes.badvpn2) {
+            /* Remove this assertion and handle invalid pages properly. */
+            KERNEL_ASSERT(tlb_entry_is_valid(entry, tes.badvaddr));
 
-    int i, index;
-    for (i = 0; i < PAGETABLE_ENTRIES; i++) {
-        if (p_entries[i].VPN2 == badvpn2 && (odd ? p_entries[i].V1 : p_entries[i].V0)) {
-            p_entries[i].ASID = state.asid;
-            index = _tlb_probe(&p_entries[i]);
-            if (index < 0)
-                _tlb_write_random(&p_entries[i]);
-            else
-                _tlb_write(&p_entries[i], index, 1);
-            return 0;
+            /* place matching tlb entry somewhere in TLB */
+            _tlb_write_random(&ptable->entries[i]);
+            return;
         }
     }
-    return 1;
+    KERNEL_PANIC("Page not found in pagetable.");
 }
 
-void tlb_modified_exception(void)
-{
-    context_t *user_context = thread_get_current_thread_entry()->user_context;
-    if (user_context->status & USERLAND_ENABLE_BIT) {
-        // thread is running a userland process
-        kprintf("Access violation: a memory store operation required a page \
-                 whose dirty bit was 0 (not writable). Ending thread..");
-        thread_finish(); // make the thread kill itself
-    } 
-    // kernel mode
-    KERNEL_PANIC("A memory store operation required a page whose dirty \
-                  bit was 0, i.e. page not writable.");
-}
-
-void tlb_load_exception(void)
-{
-    if (tlb_load_store_exception())
-        KERNEL_PANIC("TLB load exception: page entry not found or invalid.");
-}
-
-void tlb_store_exception(void)
-{
-    if (tlb_load_store_exception())
-        KERNEL_PANIC("TLB store exception: page entry not found or invalid.");
-}
-
-/**
- * Fill TLB with given pagetable. This function is used to set memory
- * mappings in CP0's TLB before we have a proper TLB handling system.
- * This approach limits the maximum mapping size to 128kB.
- *
- * @param pagetable Mappings to write to TLB.
- *
+/** 
+ * Get virtual addres of even page in TLB entry.
  */
+uint32_t tlb_entry_get_vaddr(tlb_entry_t *entry) {
+    return entry->VPN2 << 13;
+}
 
-//void tlb_fill(pagetable_t *pagetable)
-//{
-//    if(pagetable == NULL)
-//	return;
-//
-//    /* Check that the pagetable can fit into TLB. This is needed until
-//     we have proper VM system, because the whole pagetable must fit
-//     into TLB. */
-//    KERNEL_ASSERT(pagetable->valid_count <= (_tlb_get_maxindex()+1));
-//
-//    _tlb_write(pagetable->entries, 0, pagetable->valid_count);
-//
-//    /* Set ASID field in Co-Processor 0 to match thread ID so that
-//       only entries with the ASID of the current thread will match in
-//       the TLB hardware. */
-//    _tlb_set_asid(pagetable->ASID);
-//}
+/* Get physical addres from TLB entry corresponding to the given 
+   virtual address.
+   Asserts that vaddr matches that in given TLB entry. */ 
+uint32_t tlb_entry_get_paddr(tlb_entry_t *entry, uint32_t vaddr) {
+    KERNEL_ASSERT(entry->VPN2 == vaddr >> 13);
+    if(ADDR_IS_ON_EVEN_PAGE(vaddr)) {
+        return entry->PFN0 << 12;
+    } else {
+        return entry->PFN1 << 12;
+    }
+}
+
+
+/* Get valid bit from TLB entry corresponding to the given 
+   virtual address.
+   Asserts that vaddr matches that in given TLB entry. */ 
+int tlb_entry_is_valid(tlb_entry_t *entry, uint32_t vaddr) {
+    KERNEL_ASSERT(entry->VPN2 == vaddr >> 13);
+    if(ADDR_IS_ON_EVEN_PAGE(vaddr)) {
+        return entry->V0;
+    } else {
+        return entry->V1;
+    }
+}
+
+/* Set valid bit in TLB entry corresponding to the given 
+   virtual address.
+   Asserts that vaddr matches that in given TLB entry. */ 
+void tlb_entry_set_valid(tlb_entry_t *entry, uint32_t vaddr, int valid) {
+    KERNEL_ASSERT(entry->VPN2 == vaddr >> 13);
+    if(ADDR_IS_ON_EVEN_PAGE(vaddr)) {
+        entry->V0 = valid;
+    } else {
+        entry->V1 = valid;
+    }
+}
+
+

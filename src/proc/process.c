@@ -1,4 +1,4 @@
- /*
+/*
  * Process startup.
  *
  * Copyright (C) 2003-2005 Juha Aatrokoski, Timo Lilja,
@@ -40,20 +40,62 @@
 #include "kernel/assert.h"
 #include "kernel/interrupt.h"
 #include "kernel/config.h"
-#include "kernel/sleepq.h"
 #include "fs/vfs.h"
 #include "drivers/yams.h"
 #include "vm/vm.h"
 #include "vm/pagepool.h"
+#include "kernel/sleepq.h"
+
 
 /** @name Process startup
  *
- * This module contains facilities for managing userland process.
+ * This module contains a function to start a userland process.
  */
-/** Spinlock which must be held when manipulating the process table */
+
+process_table_t process_table[PROCESS_MAX_PROCESSES];
+
 spinlock_t process_table_slock;
 
-process_control_block_t process_table[PROCESS_MAX_PROCESSES];
+void process_reset(process_id_t pid)
+{
+    process_table[pid].state         = PROCESS_FREE;
+    process_table[pid].executable[0] = 0;
+    process_table[pid].retval        = 0;
+    process_table[pid].cFiles        = 0;
+    process_table[pid].deadline      = 0;
+}
+
+/* Initialize process table and spinlock */
+void process_init()
+{
+    int i;
+    spinlock_reset(&process_table_slock);
+    for (i = 0; i <= PROCESS_MAX_PROCESSES; ++i)
+        process_reset(i);
+}
+
+/* Find a free slot in the process table. Returns PROCESS_MAX_PROCESSES
+ * if the table is full. */
+process_id_t alloc_process_id()
+{
+    int i;
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+    for (i = 0; i <= PROCESS_MAX_PROCESSES; ++i)
+    {
+        if (process_table[i].state == PROCESS_FREE)
+        {
+            process_table[i].state = PROCESS_RUNNING;
+            break;
+        }
+    }
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+    return i;
+}
+
 
 /**
  * Starts one userland process. The thread calling this function will
@@ -67,7 +109,7 @@ process_control_block_t process_table[PROCESS_MAX_PROCESSES];
  * @executable The name of the executable to be run in the userland
  * process
  */
-void process_start(uint32_t pid)
+void process_start(process_id_t pid)
 {
     thread_table_t *my_entry;
     pagetable_t *pagetable;
@@ -76,6 +118,7 @@ void process_start(uint32_t pid)
     uint32_t stack_bottom;
     elf_info_t elf;
     openfile_t file;
+    char *executable;
 
     int i;
 
@@ -83,7 +126,9 @@ void process_start(uint32_t pid)
 
     my_entry = thread_get_current_thread_entry();
     my_entry->process_id = pid;
-    
+    my_entry->deadline   = process_table[pid].deadline;
+    executable = process_table[pid].executable;
+
     /* If the pagetable of this thread is not NULL, we are trying to
        run a userland process for a second time in the same thread.
        This is not possible. */
@@ -94,29 +139,34 @@ void process_start(uint32_t pid)
 
     intr_status = _interrupt_disable();
     my_entry->pagetable = pagetable;
+
+    /* Update TLB to allow access to the virtual addresses of the
+       segments. */
+    _tlb_set_asid(thread_get_current_thread());
+
     _interrupt_set_state(intr_status);
-    
-    file = vfs_open(process_table[pid].executable);
+
+    file = vfs_open((char *)executable);
     /* Make sure the file existed and was a valid ELF file */
     KERNEL_ASSERT(file >= 0);
+    kprintf("EXE: %s\n", executable);
     KERNEL_ASSERT(elf_parse_header(&elf, file));
 
     /* Trivial and naive sanity check for entry point: */
     KERNEL_ASSERT(elf.entry_point >= PAGE_SIZE);
 
-    
     /* Calculate the number of pages needed by the whole process
        (including userland stack). Since we don't have proper tlb
        handling code, all these pages must fit into TLB. */
     KERNEL_ASSERT(elf.ro_pages + elf.rw_pages + CONFIG_USERLAND_STACK_SIZE
-		  <= _tlb_get_maxindex() + 1);
+            <= _tlb_get_maxindex() + 1);
 
     /* Allocate and map stack */
     for(i = 0; i < CONFIG_USERLAND_STACK_SIZE; i++) {
         phys_page = pagepool_get_phys_page();
         KERNEL_ASSERT(phys_page != 0);
-        vm_map(my_entry->pagetable, phys_page, 
-               (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
+        vm_map(my_entry->pagetable, phys_page,
+                (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
     }
 
     /* Allocate and map pages for the segments. We assume that
@@ -125,201 +175,75 @@ void process_start(uint32_t pid)
     for(i = 0; i < (int)elf.ro_pages; i++) {
         phys_page = pagepool_get_phys_page();
         KERNEL_ASSERT(phys_page != 0);
-        vm_map(my_entry->pagetable, phys_page, 
-               elf.ro_vaddr + i*PAGE_SIZE, 1);
+        vm_map(my_entry->pagetable, phys_page,
+                elf.ro_vaddr + i*PAGE_SIZE, 1);
     }
 
     for(i = 0; i < (int)elf.rw_pages; i++) {
         phys_page = pagepool_get_phys_page();
         KERNEL_ASSERT(phys_page != 0);
-        vm_map(my_entry->pagetable, phys_page, 
-               elf.rw_vaddr + i*PAGE_SIZE, 1);
+        vm_map(my_entry->pagetable, phys_page,
+                elf.rw_vaddr + i*PAGE_SIZE, 1);
     }
-
-    /* Put the mapped pages into TLB. Here we again assume that the
-       pages fit into the TLB. After writing proper TLB exception
-       handling this call should be skipped. */
-    /*intr_status = _interrupt_disable();
-    tlb_fill(my_entry->pagetable);
-    _interrupt_set_state(intr_status);*/
-    
-    /* Now we may use the virtual addresses of the segments. */
 
     /* Zero the pages. */
     memoryset((void *)elf.ro_vaddr, 0, elf.ro_pages*PAGE_SIZE);
     memoryset((void *)elf.rw_vaddr, 0, elf.rw_pages*PAGE_SIZE);
 
-    stack_bottom = (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - 
+    stack_bottom = (USERLAND_STACK_TOP & PAGE_SIZE_MASK) -
         (CONFIG_USERLAND_STACK_SIZE-1)*PAGE_SIZE;
     memoryset((void *)stack_bottom, 0, CONFIG_USERLAND_STACK_SIZE*PAGE_SIZE);
 
     /* Copy segments */
 
     if (elf.ro_size > 0) {
-	/* Make sure that the segment is in proper place. */
+        /* Make sure that the segment is in proper place. */
         KERNEL_ASSERT(elf.ro_vaddr >= PAGE_SIZE);
         KERNEL_ASSERT(vfs_seek(file, elf.ro_location) == VFS_OK);
         KERNEL_ASSERT(vfs_read(file, (void *)elf.ro_vaddr, elf.ro_size)
-		      == (int)elf.ro_size);
+                == (int)elf.ro_size);
     }
 
     if (elf.rw_size > 0) {
-	/* Make sure that the segment is in proper place. */
+        /* Make sure that the segment is in proper place. */
         KERNEL_ASSERT(elf.rw_vaddr >= PAGE_SIZE);
         KERNEL_ASSERT(vfs_seek(file, elf.rw_location) == VFS_OK);
         KERNEL_ASSERT(vfs_read(file, (void *)elf.rw_vaddr, elf.rw_size)
-		      == (int)elf.rw_size);
+                == (int)elf.rw_size);
     }
-    
+
+
     /* Set the dirty bit to zero (read-only) on read-only pages. */
     for(i = 0; i < (int)elf.ro_pages; i++) {
         vm_set_dirty(my_entry->pagetable, elf.ro_vaddr + i*PAGE_SIZE, 0);
     }
-
-    /* Insert page mappings again to TLB to take read-only bits into use */
-    /*intr_status = _interrupt_disable();
-    tlb_fill(my_entry->pagetable);
-    //_tlb_set_asid(my_entry->pagetable->ASID);
-    _interrupt_set_state(intr_status);*/
 
     /* Initialize the user context. (Status register is handled by
        thread_goto_userland) */
     memoryset(&user_context, 0, sizeof(user_context));
     user_context.cpu_regs[MIPS_REGISTER_SP] = USERLAND_STACK_TOP;
     user_context.pc = elf.entry_point;
-    
-    // The ELF rw (whatever that is) was allocated last, and must therefore
-    // hold the offset in the program from which WE would like to have our
-    // heap --- ours grow up, because the stack already grows down.
-    process_table[pid].heap_end = (void *)(elf.rw_vaddr + elf.rw_size);
-    process_table[pid].state = PROCESS_RUNNING;
-
-    // Initialize open_files array to -1 in all entries.
-    intr_status = _interrupt_disable();
-    spinlock_acquire(&process_table_slock);
-    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        file_entry_t *f = &process_table[pid].open_files[i];
-        f->file_handle = -1;
-    }
-    spinlock_release(&process_table_slock);
-    _interrupt_set_state(intr_status);
 
     thread_goto_userland(&user_context);
 
     KERNEL_PANIC("thread_goto_userland failed.");
 }
 
-void process_init() {
-    spinlock_reset(&process_table_slock);
-    
-    spinlock_acquire(&process_table_slock);
-    
-    // initialize processes
-    for (int i = 0; i < PROCESS_MAX_PROCESSES; ++i)
-        process_table[i].state = PROCESS_DEAD;
-    
-    spinlock_release(&process_table_slock);
-}
+process_id_t process_spawn(const char *executable, uint32_t deadline)
+{
+    TID_t thread;
+    process_id_t pid = alloc_process_id();
 
-process_id_t process_spawn(const char *executable) {
-    
-    interrupt_status_t intr_status = _interrupt_disable();
-    spinlock_acquire(&process_table_slock);
- 
-    process_id_t pid = process_create_process(executable);
-    
-    // inefficient, should be handled only on startup
-    if (pid == PROCESS_STARTUP_PID) {
-        process_table[pid].parent_id = -1;
-        process_table[pid].thread_id = thread_get_current_thread();
-    
-        spinlock_release(&process_table_slock);
-        _interrupt_set_state(intr_status);
-        
-        process_start(pid); // never returns, start-up process*/
-    }
-    
-    TID_t thread_id = thread_create(&process_start, pid);
-    process_table[pid].thread_id = thread_id;
-    
-    spinlock_release(&process_table_slock);
-    _interrupt_set_state(intr_status);
-    
-    thread_run(thread_id);
-    
-    return pid;
-}
+    if (pid == PROCESS_MAX_PROCESSES)
+        return PROCESS_PTABLE_FULL;
 
-/* Stop the process and the thread it runs in. Sets the return value as well */
-void process_finish(int retval) {
-    interrupt_status_t intr_status;
-    thread_table_t *thr = thread_get_current_thread_entry();
-    process_id_t pid = process_get_current_process();
+    /* Remember to copy the executable name for use in process_start */
+    stringcopy(process_table[pid].executable, executable, PROCESS_MAX_FILELENGTH);
+    process_table[pid].parent = process_get_current_process();
+    process_table[pid].deadline = deadline;
 
-    intr_status = _interrupt_disable();
-    spinlock_acquire(&process_table_slock);
-    int i;
-    // remove parent references in other processes
-    for (i = 0; i < PROCESS_MAX_PROCESSES; ++i) {
-        if (process_table[i].parent_id == pid)
-            process_table[i].parent_id = -1;
-    }
-    
-    // SUGGESTION: check if any files are open, clean them up if so.
-
-    process_table[pid].retval = retval;
-    process_table[pid].state = PROCESS_ZOMBIE;
-
-    sleepq_wake((void *) process_table[pid].executable);
-
-    spinlock_release(&process_table_slock);
-    _interrupt_set_state(intr_status);
-
-    // clean up virtual memory
-    vm_destroy_pagetable(thr->pagetable);
-    thr->pagetable = NULL;
-
-    thread_finish();
-}
-
-int process_join(process_id_t pid) {
-    interrupt_status_t intr_status;
-    int ret;
-    process_id_t current_pid = process_get_current_process();
-
-    if (pid < 0 || process_table[pid].state == PROCESS_DEAD)
-        return -1;
-    
-    intr_status = _interrupt_disable();
-    spinlock_acquire(&process_table_slock);
-    
-    // wait for the process to become a zombie
-    //process_table[process_get_current_process()].state = PROCESS_WAITING;
-    process_table[current_pid].state = PROCESS_WAITING;
-    while (process_table[pid].state != PROCESS_ZOMBIE) {
-        sleepq_add((void *) process_table[pid].executable);
-        spinlock_release(&process_table_slock);
-        thread_switch();
-        spinlock_acquire(&process_table_slock);
-    }
-    
-    ret = process_table[pid].retval;
-    process_table[pid].state = PROCESS_DEAD;
-    process_table[current_pid].state = PROCESS_RUNNING;
-    
-    spinlock_release(&process_table_slock);
-    _interrupt_set_state(intr_status);
-    
-    return ret;
-}
-
-process_id_t process_create_process(const char * executable)
-{  
-    process_id_t pid = process_get_available_pid();
-    process_table[pid].parent_id = process_get_current_process();
-    process_table[pid].state = PROCESS_NEW;
-    process_table[pid].heap_end = NULL;
-    stringcopy(process_table[pid].executable, executable, PROCESS_NAME_LENGTH);
+    thread = thread_create((void (*)(uint32_t))(&process_start), pid);
+    thread_run(thread);
     return pid;
 }
 
@@ -328,120 +252,135 @@ process_id_t process_get_current_process(void)
     return thread_get_current_thread_entry()->process_id;
 }
 
-process_control_block_t *process_get_current_process_entry(void)
+process_table_t *process_get_current_process_entry(void)
 {
     return &process_table[process_get_current_process()];
 }
 
-process_control_block_t *process_get_process_entry(process_id_t pid) {
-    return &process_table[pid];
-}
+int process_join(process_id_t pid)
+{
+    int retval;
+    interrupt_status_t intr_status;
 
-process_id_t process_get_available_pid() {
-    // check for available process id
-    for (process_id_t pid = 0; pid < PROCESS_MAX_PROCESSES; ++pid)
-        if (process_table[pid].state == PROCESS_DEAD) return pid;
-    return -1; // could also wait for one to become available?
-}
+    /* Only join with legal pids */
+    if (pid < 0 || pid >= PROCESS_MAX_PROCESSES ||
+            process_table[pid].parent != process_get_current_process())
+        return PROCESS_ILLEGAL_JOIN;
 
-int process_add_open_file(int handle, char *pathname) {
-    process_control_block_t *pcb = process_get_current_process_entry();
-
-    interrupt_status_t intr_status = _interrupt_disable();
+    intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
 
-    int i;
-    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        if (pcb->open_files[i].file_handle == -1) {
-            pcb->open_files[i].file_handle = handle;
-            stringcopy(pcb->open_files[i].pathname, pathname, PATH_LENGTH);
-
-            spinlock_release(&process_table_slock);
-            _interrupt_set_state(intr_status);
-
-            return 0;
-        }
+    /* The thread could be zombie even though it wakes us (maybe). */
+    while (process_table[pid].state != PROCESS_ZOMBIE)
+    {
+        sleepq_add(&process_table[pid]);
+        spinlock_release(&process_table_slock);
+        thread_switch();
+        spinlock_acquire(&process_table_slock);
     }
+
+    retval = process_table[pid].retval;
+    process_reset(pid);
+
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+    return retval;
+}
+
+void process_finish(int retval)
+{
+    interrupt_status_t intr_status;
+    process_id_t cur = process_get_current_process();
+    thread_table_t *thread = thread_get_current_thread_entry();
+
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+
+    process_table[cur].state  = PROCESS_ZOMBIE;
+    process_table[cur].retval = retval;
+
+    /* Remember to destroy the pagetable! */
+    vm_destroy_pagetable(thread->pagetable);
+    thread->pagetable = NULL;
+
+    sleepq_wake_all(&process_table[cur]);
+
+    spinlock_release(&process_table_slock);
+    _interrupt_set_state(intr_status);
+    thread_finish();
+}
+
+int process_add_file(openfile_t fd)
+{
+    interrupt_status_t intr_status;
+    process_id_t pid = process_get_current_process();
+
+    intr_status = _interrupt_disable();
+    spinlock_acquire(&process_table_slock);
+
+    if (pid < 0 || pid > PROCESS_MAX_PROCESSES ||
+            process_table[pid].state != PROCESS_RUNNING ||
+            process_table[pid].cFiles >= PROCESS_MAX_FILES)
+    {
+        spinlock_release(&process_table_slock);
+        _interrupt_set_state(intr_status);
+        return -1;
+    }
+
+    process_table[pid].files[process_table[pid].cFiles++] = fd;
 
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
 
-    return -1;  // PCB open files array is full
+    return 0;
 }
 
-int process_remove_open_file(int handle) {
-    process_control_block_t *pcb = process_get_current_process_entry();
+int process_rem_file(openfile_t fd)
+{
+    interrupt_status_t intr_status;
+    uint32_t i;
+    process_id_t pid = process_get_current_process();
+    process_table_t *p = &process_table[pid];
 
-    interrupt_status_t intr_status = _interrupt_disable();
+    if (pid < 0 || pid > PROCESS_MAX_PROCESSES ||
+            p->state != PROCESS_RUNNING)
+        return -1;
+
+    intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
 
-    int i;
-    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        if (pcb->open_files[i].file_handle == handle) {
-            pcb->open_files[i].file_handle = -1;
-            memoryset(pcb->open_files[i].pathname, '\0', PATH_LENGTH);
-
-            spinlock_release(&process_table_slock);
-            _interrupt_set_state(intr_status);
-
-            return 0;
-        }
-    }
+    for (i = 0; i < p->cFiles; ++i)
+        if (p->files[i] == fd)
+            p->files[i] = p->files[--(p->cFiles)];
 
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
 
-    return -1;  // file handle not open by current process
+    return 0;
 }
 
-int process_is_file_open(char *pathname) {
+int process_check_file(openfile_t fd)
+{
+    interrupt_status_t intr_status;
+    uint32_t i;
+    int found = -1;
+    process_id_t pid = process_get_current_process();
+    process_table_t *p = &process_table[pid];
 
-    interrupt_status_t intr_status = _interrupt_disable();
+    if (pid < 0 || pid > PROCESS_MAX_PROCESSES ||
+            p->state != PROCESS_RUNNING)
+        return -1;
+
+    intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
 
-    int i, j;
-    for (j = 0; j < PROCESS_MAX_PROCESSES; j++) {
-        process_control_block_t *pcb = &process_table[j];
-        if (pcb->state == PROCESS_DEAD)
-            continue;
-        for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-            if (stringcmp(pcb->open_files[i].pathname, pathname) == 0) {
-                spinlock_release(&process_table_slock);
-                _interrupt_set_state(intr_status);
-
-                return 1;
-            }
-        }
-    }
+    for (i = 0; i < p->cFiles; ++i)
+        if (p->files[i] == fd)
+            found = 0;
 
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
-
-    return 0;  // file is not open in any process
-}
-
-int process_is_file_open_in_current_process(int handle) {
-
-    process_control_block_t * pcb = process_get_current_process_entry();
-    
-    interrupt_status_t intr_status = _interrupt_disable();
-    spinlock_acquire(&process_table_slock);
-
-    int i;
-    for (i = 0; i < PROCESS_MAX_OPEN_FILES; i++) {
-        if (pcb->open_files[i].file_handle == handle) {
-
-            spinlock_release(&process_table_slock);
-            _interrupt_set_state(intr_status);
-
-            return 1;
-        }
-    }
-
-    spinlock_release(&process_table_slock);
-    _interrupt_set_state(intr_status);
-
-    return 0;  // file is not open in any process
+    return found;
 }
 
 /** @} */

@@ -134,12 +134,21 @@ typedef struct fs_struct{
 
        Returns the number of free bytes, negative values are errors. */
     int (*getfree)(struct fs_struct *fs);
-    
-    /* TODO: Anders, do this plox :P */
-    int (*count)(struct fs_struct *fs);
-    
-    /* TODO: put comment */
-    int (*file)(struct fs_struct *fs, int index, char * buffer);
+
+    /* Function pointer to a function which returns the count of files
+       in a directory.
+
+       Returns success value as defined above (VFS_OK, etc.)
+    */
+    int (*filecount)(struct fs_struct *fs, char *dirname);
+
+    /* Function pointer to a function which reads the name of a file
+       into the specified buffer. The file is in the directory and has
+       index idx.
+
+       Returns success value as defined above (VFS_OK, etc.)
+    */
+    int (*file)(struct fs_struct *fs, char *dirname, int idx, char *buf);
 } fs_t;
 
 
@@ -160,7 +169,8 @@ int vfs_write(openfile_t file, void *buffer, int datasize);
 int vfs_create(char *pathname, int size);
 int vfs_remove(char *pathname);
 int vfs_getfree(char *filesystem);
-int vfs_count(char * volumename);
-int vfs_file(char * volumename, int index, char * buffer);
+
+int vfs_filecount(char *pathname);
+int vfs_file(char *pathname, int idx, char *buffer);
 
 #endif

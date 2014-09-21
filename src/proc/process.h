@@ -37,74 +37,45 @@
 #ifndef BUENOS_PROC_PROCESS
 #define BUENOS_PROC_PROCESS
 
-#include "kernel/cswitch.h"
-
-typedef int process_id_t;
-typedef void heap_ptr_t;
+#include "lib/types.h"
 
 #define USERLAND_STACK_TOP 0x7fffeffc
 
 #define PROCESS_PTABLE_FULL  -1
 #define PROCESS_ILLEGAL_JOIN -2
 
-#define PROCESS_MAX_PROCESSES 32
-#define PROCESS_STARTUP_PID 0
+#define PROCESS_MAX_FILELENGTH 256
+#define PROCESS_MAX_PROCESSES  128
+#define PROCESS_MAX_FILES      10
 
-#define PROCESS_NAME_LENGTH 128
-#define PROCESS_MAX_OPEN_FILES 8
+typedef int process_id_t;
 
-#define PATH_LENGTH 256
-
-/* Enumeration type of process states. */
 typedef enum {
-    PROCESS_NEW,
-    PROCESS_WAITING,
+    PROCESS_FREE,
     PROCESS_RUNNING,
-    PROCESS_ZOMBIE,
-    PROCESS_DEAD
+    PROCESS_ZOMBIE
 } process_state_t;
 
 typedef struct {
-    int file_handle;
-    char pathname[PATH_LENGTH];
-} file_entry_t;
-
-/* Process control block data structure. */
-typedef struct {
-    /* name of executable */
-    char executable[PROCESS_NAME_LENGTH];
-
-    // parent id
-    process_id_t parent_id;
-    
-    // thread id
-    int thread_id;
-
-    /* process state */
+    char executable[PROCESS_MAX_FILELENGTH];
     process_state_t state;
-
-    // return value
     int retval;
+    process_id_t parent;
 
-    // heap pointer
-    heap_ptr_t *heap_end;
+    uint32_t deadline;
+    
+    uint32_t cFiles;
+    int files[PROCESS_MAX_FILES];
+} process_table_t;
 
-    // open files
-    file_entry_t open_files[PROCESS_MAX_OPEN_FILES];
-
-    // system wide process open files, should be handled in vfs perhaps.
-    //static file_entry_t file_entries[CONFIG_MAX_OPEN_FILES];
-} process_control_block_t;
-
-
-void process_start(uint32_t pid);
-
-/* Initialize the process table.  This must be called during kernel
-   startup before any other process-related calls. */
+/* Initialize the process table */
 void process_init();
 
 /* Run process in a new thread. Returns the PID of the new process. */
-process_id_t process_spawn(const char *executable);
+process_id_t process_spawn(const char *executable, uint32_t deadline);
+
+process_id_t process_get_current_process(void);
+process_table_t *process_get_current_process_entry(void);
 
 /* Stop the process and the thread it runs in. Sets the return value as well */
 void process_finish(int retval);
@@ -114,32 +85,15 @@ void process_finish(int retval);
  * Only works on child processes */
 int process_join(process_id_t pid);
 
-process_id_t process_create_process(const char * executable);
+/* Add a file to the current process's file list. Returns negative value on
+ * error. */
+int process_add_file(int fd);
 
-/* Return PID of current process. */
-process_id_t process_get_current_process(void);
+/* Remove a file from the current process's file list. Returns negative value
+ * on error. */
+int process_rem_file(int fd);
 
-/* Return PCB of current process. */
-process_control_block_t *process_get_current_process_entry(void);
-
-/* Return PCB with the pid */
-process_control_block_t *process_get_process_entry(process_id_t pid);
-
-/* Return an available pid. */
-process_id_t process_get_available_pid();
-
-/* Add an int filehandle to the PCB of the current process.
- * Returns 0 on success and a negative integer on error. */
-int process_add_open_file(int handle, char *pathname);
-
-/* Remove an int filehandle from the PCB of the current process.
- * Returns 0 on success and a negative integer on error. */
-int process_remove_open_file(int handle);
-
-/* Returns non-zero int if pathname file is open, otherwise 0. */
-int process_is_file_open(char *pathname);
-
-/* Returns non-zero int if handle is open in the current process, otherwise 0. */
-int process_is_file_open_in_current_process(int handle);
+/* Check if a file is in the current process's file list. Returns 0 if it is. */
+int process_check_file(int fd);
 
 #endif

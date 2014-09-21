@@ -68,7 +68,7 @@ static struct {
 void scheduler_init(void) {
     int i;
     for (i=0; i<CONFIG_MAX_CPUS; i++)
-	scheduler_current_thread[i] = 0;
+        scheduler_current_thread[i] = 0;
 }
 
 /**
@@ -89,15 +89,44 @@ void scheduler_add_to_ready_list(TID_t t)
     KERNEL_ASSERT(t >= 0 && t < CONFIG_MAX_THREADS);
 
     if (scheduler_ready_to_run.tail < 0) {
-	/* ready queue was empty */
-	scheduler_ready_to_run.head = t;
-	scheduler_ready_to_run.tail = t;
-	thread_table[t].next = -1;
+        /* ready queue was empty */
+        scheduler_ready_to_run.head = t;
+        scheduler_ready_to_run.tail = t;
+        thread_table[t].next = -1;
     } else {
-	/* ready queue was not empty */
-	thread_table[scheduler_ready_to_run.tail].next = t;
-	thread_table[t].next = -1;
-	scheduler_ready_to_run.tail = t;
+        
+        /* ready queue was not empty */
+        if (thread_table[t].deadline == 0) // low-priority thread
+        {
+            thread_table[scheduler_ready_to_run.tail].next = t;
+            thread_table[t].next = -1;
+            scheduler_ready_to_run.tail = t;
+            return;
+        }
+        
+        // jump over the entire queue, if thread has shorter deadline
+        if (thread_table[scheduler_ready_to_run.head].deadline > thread_table[t].deadline)
+        {
+            thread_table[t].next = scheduler_ready_to_run.head;
+            scheduler_ready_to_run.head = t;
+            return;
+        }
+        
+        // search for appropriate place to schedule the thread
+        TID_t curr = scheduler_ready_to_run.head;
+        TID_t next = -1;
+        while ( (next = thread_table[curr].next) != -1 &&
+                thread_table[next].deadline > 0 &&
+                thread_table[next].deadline < thread_table[t].deadline)
+        {
+            curr = thread_table[curr].next;
+        }
+
+        thread_table[curr].next = t;
+        thread_table[t].next = next;
+
+        if (thread_table[t].next == -1)
+            scheduler_ready_to_run.tail = t;
     }
 }
 
@@ -123,18 +152,20 @@ static TID_t scheduler_remove_first_ready(void)
     if(t >= 0) {
         /* Threads in ready queue should be in state Ready */
         KERNEL_ASSERT(thread_table[t].state == THREAD_READY);
-	if(scheduler_ready_to_run.tail == t) {
-	    scheduler_ready_to_run.tail = -1;
-	}
-	scheduler_ready_to_run.head =
-	    thread_table[scheduler_ready_to_run.head].next;
+        if(scheduler_ready_to_run.tail == t) {
+            scheduler_ready_to_run.tail = -1;
+        }
+        scheduler_ready_to_run.head =
+            thread_table[scheduler_ready_to_run.head].next;
 
+        KERNEL_ASSERT(thread_table[t].deadline < thread_table[scheduler_ready_to_run.head].deadline
+                   || thread_table[scheduler_ready_to_run.head].deadline == 0);
     }
-
+    
     if(t < 0) {
-	return IDLE_THREAD_TID;
+        return IDLE_THREAD_TID;
     } else {
-	return t;
+        return t;
     }
 }
 
@@ -151,7 +182,7 @@ static TID_t scheduler_remove_first_ready(void)
 void scheduler_add_ready(TID_t t)
 {
     interrupt_status_t intr_status;
-    
+
     intr_status = _interrupt_disable();
 
     spinlock_acquire(&thread_table_slock);
@@ -196,13 +227,13 @@ void scheduler_schedule(void)
     current_thread = &(thread_table[scheduler_current_thread[this_cpu]]);
 
     if(current_thread->state == THREAD_DYING) {
-	current_thread->state = THREAD_FREE;
+        current_thread->state = THREAD_FREE;
     } else if(current_thread->sleeps_on != 0) {
-	current_thread->state = THREAD_SLEEPING;
+        current_thread->state = THREAD_SLEEPING;
     } else {
-	if(scheduler_current_thread[this_cpu] != IDLE_THREAD_TID)
-	    scheduler_add_to_ready_list(scheduler_current_thread[this_cpu]);
-	current_thread->state = THREAD_READY;
+        if(scheduler_current_thread[this_cpu] != IDLE_THREAD_TID)
+            scheduler_add_to_ready_list(scheduler_current_thread[this_cpu]);
+        current_thread->state = THREAD_READY;
     }
 
     t = scheduler_remove_first_ready();
@@ -214,5 +245,5 @@ void scheduler_schedule(void)
 
     /* Schedule timer interrupt to occur after thread timeslice is spent */
     timer_set_ticks(_get_rand(CONFIG_SCHEDULER_TIMESLICE) + 
-                    CONFIG_SCHEDULER_TIMESLICE / 2);
+            CONFIG_SCHEDULER_TIMESLICE / 2);
 }

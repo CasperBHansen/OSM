@@ -87,7 +87,7 @@ typedef struct {
 typedef struct {
     uint32_t badvaddr; /* Address that caused the exception*/
     uint32_t badvpn2;  /* VPN2 of the above */
-    uint32_t asid;     /* ASID of the causing process, only 8 lowest bits used */
+    uint32_t asid; /* ASID of the causing process, only 8 lowest bits used */
 } tlb_exception_state_t;
 
 /* exception handlers */
@@ -95,9 +95,11 @@ void tlb_modified_exception(void);
 void tlb_load_exception(void);
 void tlb_store_exception(void);
 
-/* Forward declare pagetable_t (== struct pagetable_struct_t) */
-struct pagetable_struct_t;
-void tlb_fill(struct pagetable_struct_t *pagetable);
+/* Utility functions */
+uint32_t tlb_entry_get_vaddr(tlb_entry_t *entry);
+uint32_t tlb_entry_get_paddr(tlb_entry_t *entry, uint32_t vaddr);
+int tlb_entry_is_valid(tlb_entry_t *entry, uint32_t vaddr);
+void tlb_entry_set_valid(tlb_entry_t *entry, uint32_t vaddr, int valid);
 
 /* assembler function wrappers */
 void _tlb_get_exception_state(tlb_exception_state_t *state);

@@ -55,7 +55,6 @@
 #include "lib/libc.h"
 #include "net/network.h"
 #include "proc/process.h"
-#include "proc/semaphore.h"
 #include "vm/vm.h"
 
 /**
@@ -119,27 +118,27 @@ void init_startup_thread(uint32_t arg)
     /* Threads have arguments for functions they run, we don't
        need any. Silence the compiler warning by using the argument. */
     arg = arg;
+    process_id_t pid;
 
     kprintf("Mounting filesystems\n");
     vfs_mount_all();
-
-    kwrite("Initializing process system\n");
-    process_init();
 
     kprintf("Initializing networking\n");
     network_init();
 
     if(bootargs_get("initprog") == NULL) {
-	    kprintf("No initial program (initprog), dropping to fallback\n");
-	    init_startup_fallback();
+	kprintf("No initial program (initprog), dropping to fallback\n");
+	init_startup_fallback();
     }
 
     kprintf("Starting initial program '%s'\n", bootargs_get("initprog"));
 
-    process_spawn(bootargs_get("initprog"));
-    
-    /* The current process_start() should never return. */
-    KERNEL_PANIC("Run out of initprog.\n");
+    pid = process_spawn(bootargs_get("initprog"), 0);
+    if (pid < 0)
+        KERNEL_PANIC("Couldn't fit initial program in process table.\n");
+
+    process_join(pid);
+    halt_kernel();
 }
 
 /* Whether other processors than 0 may continue in SMP mode.
@@ -200,14 +199,14 @@ void init(void)
     kwrite("Initializing threading system\n");
     thread_table_init();
 
+    kwrite("Initializing user process system\n");
+    process_init();
+
     kwrite("Initializing sleep queue\n");
     sleepq_init();
 
     kwrite("Initializing semaphores\n");
     semaphore_init();
-    
-    kwrite("Initializing userland semaphores\n");
-    semaphore_userland_init();
 
     kwrite("Initializing device drivers\n");
     device_init();

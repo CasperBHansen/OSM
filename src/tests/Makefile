@@ -36,7 +36,9 @@
 # $Id: Makefile,v 1.6 2005/05/09 00:05:44 jaatroko Exp $
 
 # Add your _userland_ program sources to this variable:
-SOURCES  := halt.c readwrite.c subprocess.c mem_test.c tlb_test.c fs_test.c osh.c
+SOURCES  := halt.c hw.c exec.c calc.c testfile.c filetest.c bigfile.c \
+	testlist.c shell.c clock.c deadline.c long_program.c pipe.c \
+	talker.c listener.c
 
 OBJECTS  := $(patsubst %.c, %.o, $(SOURCES))
 TARGETS  := $(patsubst %.o, %, $(OBJECTS))

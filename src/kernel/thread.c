@@ -82,28 +82,29 @@ void thread_table_init(void)
 
     /* Init all entries to 'NULL' */
     for (i=0; i<CONFIG_MAX_THREADS; i++) {
-    /* Set context pointers to the top of the stack*/
-    thread_table[i].context      = (context_t *) (thread_stack_areas
-        +CONFIG_THREAD_STACKSIZE*i + CONFIG_THREAD_STACKSIZE - 
-                              sizeof(context_t));
-    thread_table[i].user_context = NULL;
-    thread_table[i].state        = THREAD_FREE;
-    thread_table[i].sleeps_on    = 0;
-    thread_table[i].pagetable    = NULL;
-    thread_table[i].process_id   = -1;  
-    thread_table[i].next         = -1;  
+        /* Set context pointers to the top of the stack*/
+        thread_table[i].context      = (context_t *) (thread_stack_areas
+                +CONFIG_THREAD_STACKSIZE*i + CONFIG_THREAD_STACKSIZE - 
+                sizeof(context_t));
+        thread_table[i].user_context = NULL;
+        thread_table[i].state        = THREAD_FREE;
+        thread_table[i].sleeps_on    = 0;
+        thread_table[i].deadline     = 0;
+        thread_table[i].pagetable    = NULL;
+        thread_table[i].process_id   = -1;	
+        thread_table[i].next         = -1;	
     }
 
     thread_table[IDLE_THREAD_TID].context->cpu_regs[MIPS_REGISTER_SP] =
-    (uint32_t) thread_stack_areas + CONFIG_THREAD_STACKSIZE -4 -
-    sizeof(context_t);
+        (uint32_t) thread_stack_areas + CONFIG_THREAD_STACKSIZE -4 -
+        sizeof(context_t);
     thread_table[IDLE_THREAD_TID].context->pc = 
         (uint32_t) _idle_thread_wait_loop;
     thread_table[IDLE_THREAD_TID].context->status = 
         INTERRUPT_MASK_ALL | INTERRUPT_MASK_MASTER;
     thread_table[IDLE_THREAD_TID].state = THREAD_READY;
     thread_table[IDLE_THREAD_TID].context->prev_context =
-    thread_table[IDLE_THREAD_TID].context;
+        thread_table[IDLE_THREAD_TID].context;
 }
 
 
@@ -122,14 +123,14 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
 {
     static TID_t next_tid = 0;
     TID_t i, tid = -1;
-    
+
+
     interrupt_status_t intr_status;
-      
+
     intr_status = _interrupt_disable();
 
     spinlock_acquire(&thread_table_slock);
-    
-    
+
     /* Find the first free thread table entry starting from 'next_tid' */
     for (i=0; i<CONFIG_MAX_THREADS; i++) {
         TID_t t = (i + next_tid) % CONFIG_MAX_THREADS;
@@ -137,7 +138,8 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
         if(t == IDLE_THREAD_TID)
             continue;
 
-        if (thread_table[t].state == THREAD_FREE) {
+        if (thread_table[t].state
+                == THREAD_FREE) {
             tid = t;
             break;
         }
@@ -157,9 +159,9 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
     spinlock_release(&thread_table_slock);
     _interrupt_set_state(intr_status);
 
-    thread_table[tid].context = (context_t *) (thread_stack_areas
-        + CONFIG_THREAD_STACKSIZE*tid + CONFIG_THREAD_STACKSIZE
-        - sizeof(context_t));
+    thread_table[tid].context      = (context_t *) (thread_stack_areas
+            +CONFIG_THREAD_STACKSIZE*tid + CONFIG_THREAD_STACKSIZE - 
+            sizeof(context_t));
 
     for (i=0; i< (int) sizeof(context_t)/4; i++) {
         *(((uint32_t *) thread_table[tid].context) + i) = 0;
@@ -168,6 +170,7 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
     thread_table[tid].user_context = NULL;
     thread_table[tid].pagetable    = NULL;
     thread_table[tid].sleeps_on    = 0;
+    thread_table[tid].deadline     = 0;
     thread_table[tid].process_id   = -1;
     thread_table[tid].next         = -1;
 
@@ -175,17 +178,18 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
     thread_table[tid].context->prev_context = thread_table[tid].context;
 
     /* set stack pointer to the end of stack */
-    thread_table[tid].context->cpu_regs[MIPS_REGISTER_SP] =
+    thread_table[tid].context->cpu_regs[MIPS_REGISTER_SP] = 
         (uint32_t)thread_stack_areas
         + (CONFIG_THREAD_STACKSIZE * tid) 
-        + CONFIG_THREAD_STACKSIZE - 4 - sizeof(context_t); /* to the end of stack */
+        + CONFIG_THREAD_STACKSIZE-4-
+        sizeof(context_t); /* to the end of stack */
 
     /* set program counter to the specified function */
-    thread_table[tid].context->pc = (uint32_t) func;
+    thread_table[tid].context->pc = (uint32_t)func;
 
     /* set the return address to thread_finish */
     thread_table[tid].context->cpu_regs[MIPS_REGISTER_RA] = 
-    (uint32_t)thread_finish;    
+        (uint32_t)thread_finish;    
 
     /* set the argument register to the specified argument ... */
     thread_table[tid].context->cpu_regs[MIPS_REGISTER_A0] = arg;    
@@ -197,7 +201,7 @@ TID_t thread_create(void (*func)(uint32_t), uint32_t arg)
     /* enable interrupts for this new thread */
     thread_table[tid].context->status = 
         INTERRUPT_MASK_ALL | INTERRUPT_MASK_MASTER;
-    
+
     return tid;
 }
 
@@ -213,8 +217,6 @@ void thread_run(TID_t t)
     scheduler_add_ready(t);
 }
 
-
-
 /** Perform voluntary rescheduling. The current (=calling) thread will
  * voluntary end its time slice when this function is called. The
  * thread will remain in a ready state, and if there are no other
@@ -224,11 +226,11 @@ void thread_run(TID_t t)
  */
 void thread_switch(void)
 {
-      interrupt_status_t intr_status;
-      
-      intr_status = _interrupt_enable();
-      _interrupt_generate_sw0();
-      _interrupt_set_state(intr_status);
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_enable();
+    _interrupt_generate_sw0();
+    _interrupt_set_state(intr_status);
 }
 
 /**
@@ -242,7 +244,7 @@ TID_t thread_get_current_thread(void)
 {
     TID_t t;
     interrupt_status_t intr_status;
-      
+
     intr_status = _interrupt_disable();
 
     t = scheduler_current_thread[_interrupt_getcpu()];
@@ -264,7 +266,7 @@ thread_table_t *thread_get_current_thread_entry(void)
 {
     TID_t t;
     interrupt_status_t intr_status;
-      
+
     intr_status = _interrupt_disable();
 
     t = scheduler_current_thread[_interrupt_getcpu()];
@@ -290,7 +292,7 @@ void thread_goto_userland(context_t *usercontext)
     usercontext->status = usercontext->status | INTERRUPT_MASK_ALL;
     usercontext->status = usercontext->status | INTERRUPT_MASK_MASTER;
     _cswitch_to_userland(usercontext);
-    
+
     KERNEL_PANIC("Userland entering returned for unknown reason.");
 }
 
@@ -313,17 +315,12 @@ void thread_finish(void)
     spinlock_acquire(&thread_table_slock);
     thread_table[my_tid].state = THREAD_DYING;
     spinlock_release(&thread_table_slock);
-    
+
     _interrupt_enable();
     _interrupt_generate_sw0();
 
     /* not possible without a stack? alternative in assembler? */
     KERNEL_PANIC("thread_finish(): thread was not destroyed");
-}
-
-void thread_set_thread_pid(TID_t thread_id, process_id_t process_id)
-{
-    thread_table[thread_id].process_id = process_id;
 }
 
 /** @} */

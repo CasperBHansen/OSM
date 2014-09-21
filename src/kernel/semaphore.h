@@ -47,7 +47,7 @@ typedef struct {
 } semaphore_t;
 
 void semaphore_init(void);
-semaphore_t* semaphore_create(int value);
+semaphore_t *semaphore_create(int value);
 void semaphore_destroy(semaphore_t *sem);
 void semaphore_P(semaphore_t *sem);
 void semaphore_V(semaphore_t *sem);
